@@ -58,6 +58,9 @@ async function openFile(): Promise<void> {
 const fileInput = document.createElement('input');
 fileInput.type = 'file';
 fileInput.accept = '.md,.markdown,text/markdown';
+fileInput.style.display = 'none';
+// Must be attached for the picker to open on synthetic click in all browsers.
+document.body.appendChild(fileInput);
 fileInput.addEventListener('change', () => {
   const file = fileInput.files?.[0];
   fileInput.value = '';
@@ -104,7 +107,10 @@ function download(text: string): void {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], { type: 'text/markdown' }));
   a.download = suggestedName();
+  // Attach before clicking so the download fires in every browser (cf. export.ts).
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 

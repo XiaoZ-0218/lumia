@@ -1,0 +1,370 @@
+#!/usr/bin/env node
+// Runtime smoke test for the Typora clone.
+// Boots the production bundle (dist/assets/index-*.js) inside jsdom and asserts
+// end-to-end behavior: editor boot, module init, outline, tabs, source mode,
+// HTML export, focus/typewriter modes, and format shortcut guards.
+//
+// Usage:
+//   npm i --no-save jsdom
+//   npm run build
+//   node scripts/smoke.mjs
+//
+// jsdom is intentionally not a package.json dependency — it is a dev-only test
+// tool, so `npm i --no-save jsdom` keeps package.json / package-lock.json clean.
+
+import { readFileSync, readdirSync } from 'node:fs';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { dirname, join } from 'node:path';
+import { JSDOM, VirtualConsole } from 'jsdom';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+// ---- tiny test harness -----------------------------------------------------
+let passed = 0;
+let failed = 0;
+function assert(cond, msg) {
+  if (cond) {
+    passed++;
+    console.log(`  ok - ${msg}`);
+  } else {
+    failed++;
+    console.error(`  FAIL - ${msg}`);
+  }
+}
+async function waitFor(fn, label, timeout = 20000) {
+  const t0 = Date.now();
+  for (;;) {
+    try {
+      if (fn()) return;
+    } catch {
+      /* retry */
+    }
+    if (Date.now() - t0 > timeout) throw new Error(`timeout waiting for: ${label}`);
+    await new Promise((r) => setTimeout(r, 25));
+  }
+}
+const tick = (ms = 20) => new Promise((r) => setTimeout(r, ms));
+
+// ---- locate the built entry chunk ------------------------------------------
+const distIndex = readFileSync(join(root, 'dist', 'index.html'), 'utf8');
+const chunkMatch = distIndex.match(/src="\.?\/?(assets\/index-[^"]+\.js)"/);
+if (!chunkMatch) throw new Error('no built entry chunk found in dist/index.html');
+const chunkPath = join(root, 'dist', chunkMatch[1]);
+
+// ---- boot jsdom -------------------------------------------------------------
+const html = readFileSync(join(root, 'index.html'), 'utf8');
+const vc = new VirtualConsole();
+const jsdomErrors = [];
+vc.on('jsdomError', (e) => jsdomErrors.push(e.message));
+const dom = new JSDOM(html, {
+  url: 'http://localhost/',
+  pretendToBeVisual: true,
+  runScripts: 'outside-only',
+  virtualConsole: vc,
+});
+const { window } = dom;
+const { document } = window;
+
+// Expose the browser globals the bundle (and Milkdown/ProseMirror) rely on.
+// Deliberately NOT overwritten: URL, Blob, fetch, timers, console (Node's own
+// implementations are used / stubbed below where jsdom lacks them).
+// Note: @milkdown/ctx's Timer uses BARE addEventListener/removeEventListener/
+// dispatchEvent, which only resolve in a browser global scope — shim them here.
+const globalsToCopy = [
+  'window', 'document', 'navigator', 'getComputedStyle', 'localStorage',
+  'sessionStorage', 'history', 'location', 'requestAnimationFrame',
+  'cancelAnimationFrame', 'Element', 'HTMLElement', 'HTMLAnchorElement',
+  'HTMLButtonElement', 'HTMLInputElement', 'HTMLSelectElement',
+  'HTMLTextAreaElement', 'HTMLLinkElement', 'HTMLUListElement', 'HTMLLIElement',
+  'Node', 'Text', 'DocumentFragment', 'Document', 'Comment', 'Range', 'DOMRect',
+  'MutationObserver', 'Event', 'KeyboardEvent', 'MouseEvent', 'CustomEvent',
+  'File', 'FormData', 'Headers', 'XMLHttpRequest', 'addEventListener',
+  'removeEventListener', 'dispatchEvent',
+];
+for (const key of globalsToCopy) {
+  Object.defineProperty(globalThis, key, {
+    value: window[key],
+    configurable: true,
+    writable: true,
+  });
+}
+if (typeof document.getSelection !== 'function') {
+  document.getSelection = () => window.getSelection();
+}
+
+// jsdom layout gaps — stub, don't delete features.
+window.HTMLElement.prototype.scrollIntoView = function () {};
+window.print = () => {};
+window.prompt = () => 'https://example.com';
+// jsdom's Range lacks the rect APIs ProseMirror calls while measuring the
+// caret — return empty rects (jsdom's geometry is all zeros anyway).
+for (const [proto, method] of [
+  [window.Range.prototype, 'getBoundingClientRect'],
+  [window.Range.prototype, 'getClientRects'],
+]) {
+  if (typeof proto[method] !== 'function') {
+    proto[method] =
+      method === 'getClientRects'
+        ? () => []
+        : () => ({ top: 0, left: 0, height: 0, width: 0, right: 0, bottom: 0, x: 0, y: 0 });
+  }
+}
+
+// Blob URL + anchor-click interception so export/save downloads are observable.
+const createdBlobs = new Map();
+let urlSeq = 0;
+globalThis.URL.createObjectURL = (b) => {
+  const u = `blob:mock-${urlSeq++}`;
+  createdBlobs.set(u, b);
+  return u;
+};
+globalThis.URL.revokeObjectURL = () => {};
+const downloads = [];
+window.HTMLAnchorElement.prototype.click = function () {
+  downloads.push({ href: this.href, download: this.download });
+};
+
+// Theme CSS served for the export test (read the real built asset when found).
+const assetFiles = readdirSync(join(root, 'dist', 'assets'));
+globalThis.fetch = async (input) => {
+  const url = typeof input === 'string' ? input : input?.url ?? '';
+  const base = url.split('/').pop();
+  const file = assetFiles.find((f) => f === base && f.endsWith('.css'));
+  const css = file
+    ? readFileSync(join(root, 'dist', 'assets', file), 'utf8')
+    : '/* no css */ body.theme-github #editor .ProseMirror { color: #000; }';
+  return { ok: true, text: async () => css };
+};
+
+// ---- boot the bundle ---------------------------------------------------------
+console.log('Booting bundle:', chunkMatch[1]);
+await import(pathToFileURL(chunkPath).href);
+
+await waitFor(
+  () => {
+    const pm = document.querySelector('#editor .milkdown .ProseMirror');
+    return (
+      pm && pm.textContent.includes('Welcome to Typora Clone') &&
+      typeof window.__editor?.getMarkdown === 'function'
+    );
+  },
+  'editor boot',
+);
+await tick(150); // let onUpdate / outline / export wiring settle
+
+const $ = (sel) => document.querySelector(sel);
+const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+const editor = window.__editor;
+const pm = () => document.querySelector('#editor .milkdown .ProseMirror');
+
+// ---- 1. editor boots + getMarkdown round-trip -------------------------------
+console.log('\n[1] Editor boot & markdown round-trip');
+assert($('#editor .milkdown .ProseMirror') !== null, '#editor .milkdown .ProseMirror exists');
+assert($('#editor .milkdown .ProseMirror').getAttribute('contenteditable') === 'true',
+  'ProseMirror is contenteditable');
+const welcomeMd = await editor.getMarkdown();
+assert(welcomeMd.includes('# Welcome to Typora Clone'), 'getMarkdown returns the welcome doc');
+assert(welcomeMd.includes('## Table'), 'getMarkdown contains all sections');
+
+await editor.setMarkdown('# Hello\n\nWorld of **smoke**');
+const roundMd = await editor.getMarkdown();
+assert(roundMd.includes('# Hello') && roundMd.includes('**smoke**'), 'setMarkdown round-trips');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'outline re-render after restore');
+
+// ---- 2. all feature modules init without throwing ---------------------------
+console.log('\n[2] Feature module init (sidebar / export / files / format / viewmodes)');
+assert($('.sidebar-tabs') !== null, 'sidebar tabs built');
+assert($$('.sidebar-tab').length === 2, 'two sidebar tabs exist');
+assert($('#file-tree .tree-empty')?.textContent.includes('Open a folder to browse'),
+  'file tree shows the empty state (sidebar init ran)');
+assert($('#open-folder').disabled === true, 'open-folder disabled without showDirectoryPicker');
+assert($$('#theme-select option').length === 4, 'theme select populated with 4 themes');
+assert(document.body.classList.contains('theme-github'), 'default theme applied');
+assert($('#theme-link') !== null, 'theme stylesheet link injected');
+assert($$('.statusbar-btn').length >= 5, 'statusbar controls present');
+assert(window.localStorage.length >= 0, 'localStorage available');
+
+// ---- 3. outline renders items from the welcome doc --------------------------
+console.log('\n[3] Outline');
+// Force a real re-render through the (200ms-debounced) updated listener.
+await editor.setMarkdown('# Only One Heading\n\nSome text');
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 1,
+  'outline re-renders after setMarkdown');
+assert($('#outline .outline-item').textContent === 'Only One Heading',
+  'outline reflects the new doc after update');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'outline has 7 items from welcome doc');
+const items = $$('#outline .outline-item');
+assert(items[0].textContent === 'Welcome to Typora Clone', 'first outline item is the H1');
+assert(items[0].className.includes('lvl-1') && items[1].className.includes('lvl-2'),
+  'heading levels reflected in classes');
+assert($$('#outline .outline-item.active').length === 1, 'one outline item is active');
+
+// ---- 4. sidebar tabs switch --------------------------------------------------
+console.log('\n[4] Sidebar tabs');
+const sections = $$('.sidebar .sidebar-panel');
+const tabFiles = $$('.sidebar-tab')[0];
+const tabOutline = $$('.sidebar-tab')[1];
+assert(sections[0].hidden === false && sections[1].hidden === true, 'Files panel visible initially');
+tabOutline.click();
+assert(sections[0].hidden === true && sections[1].hidden === false, 'Outline panel shown after click');
+assert(tabOutline.className.includes('active') && !tabFiles.className.includes('active'),
+  'Outline tab marked active');
+tabFiles.click();
+assert(sections[0].hidden === false && sections[1].hidden === true, 'Files panel restored');
+
+// ---- 5. source-mode toggle round-trips markdown ------------------------------
+console.log('\n[5] Source mode toggle');
+$('#source-toggle').click();
+await tick();
+assert(document.body.classList.contains('source-mode'), 'source mode class applied');
+const ta = $('#source');
+assert(ta.value.includes('# Welcome to Typora Clone'), 'textarea populated with markdown');
+const edited = '# Edited in source\n\n- item one\n- item two';
+ta.value = edited;
+ta.dispatchEvent(new Event('input', { bubbles: true }));
+$('#source-toggle').click();
+await tick();
+assert(!document.body.classList.contains('source-mode'), 'WYSIWYG restored after second toggle');
+const after = await editor.getMarkdown();
+assert(after.includes('# Edited in source') && /^[-*] item one$/m.test(after) && after.includes('item two'),
+  'markdown round-trips through the textarea');
+
+// Title follows the doc through the (200ms-debounced) updated listener.
+// Use a fresh heading so the wait is not vacuous.
+await editor.setMarkdown('# Post Toggle Title\n\nBody text');
+await waitFor(() => $('#doc-title')?.textContent === 'Post Toggle Title',
+  'title follows doc through the listener');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => $('#doc-title')?.textContent === 'Welcome to Typora Clone',
+  'title restored from doc');
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'outline restored after source round-trip');
+
+// ---- 6. export HTML -----------------------------------------------------------
+console.log('\n[6] HTML export');
+$('#export-html').click();
+await waitFor(() => downloads.length > 0, 'export download initiated');
+const dl = downloads[downloads.length - 1];
+assert(dl.download === 'Welcome to Typora Clone.html', `export filename (got "${dl.download}")`);
+const blob = createdBlobs.get(dl.href);
+assert(blob !== undefined, 'download Blob captured');
+const exportHtml = await blob.text();
+assert(exportHtml.includes('<!doctype html>'), 'standalone doctype');
+assert(exportHtml.includes('<body class="theme-github">'), 'body carries theme class');
+assert(exportHtml.includes('<main id="editor"><div class="ProseMirror">'),
+  'editor structure reproduced for theme CSS');
+assert(exportHtml.includes('body.theme-github'), 'theme CSS embedded');
+assert(exportHtml.includes('<title>Welcome to Typora Clone</title>'), 'export title set');
+
+// ---- 7. files fallback save (no FS Access API → download) --------------------
+console.log('\n[7] Files fallback save');
+const dlCount = downloads.length;
+$('#save-file').click();
+await waitFor(() => downloads.length === dlCount + 1, 'save fallback download initiated');
+const saveDl = downloads[downloads.length - 1];
+assert(saveDl.download === 'Welcome to Typora Clone.md', `save filename (got "${saveDl.download}")`);
+const saveBlob = createdBlobs.get(saveDl.href);
+const savedText = await saveBlob.text();
+assert(savedText.includes('# Welcome to Typora Clone'), 'saved markdown matches the doc');
+
+// ---- 8. focus mode / typewriter ----------------------------------------------
+console.log('\n[8] View modes');
+$('#focus-toggle').click();
+assert(document.body.classList.contains('focus-mode'), 'focus mode class toggled on');
+assert(localStorage.getItem('typora-clone:focus') === '1', 'focus state persisted');
+// Put the caret in the first paragraph, then fire selectionchange.
+const para = pm().querySelector('p');
+const textNode = para.firstChild;
+const sel = document.getSelection();
+sel.removeAllRanges();
+const r = document.createRange();
+r.setStart(textNode, 0);
+r.collapse(true);
+sel.addRange(r);
+document.dispatchEvent(new Event('selectionchange'));
+await waitFor(() => pm().querySelector('.focus-active') === para, 'active block marked .focus-active');
+assert(para.className.includes('focus-active'), 'paragraph marked as focus-active');
+$('#focus-toggle').click();
+assert(!document.body.classList.contains('focus-mode'), 'focus mode toggled off');
+assert(pm().querySelector('.focus-active') === null, 'focus-active cleared');
+
+$('#typewriter-toggle').click();
+assert(document.body.classList.contains('typewriter-mode'), 'typewriter mode toggled on');
+document.dispatchEvent(new Event('selectionchange'));
+await tick(60); // let rAF fire
+assert(document.body.classList.contains('typewriter-mode'), 'typewriter scroll ran without throwing');
+$('#typewriter-toggle').click();
+assert(!document.body.classList.contains('typewriter-mode'), 'typewriter mode toggled off');
+localStorage.removeItem('typora-clone:focus');
+localStorage.removeItem('typora-clone:typewriter');
+
+// ---- 9. format shortcuts + guards ---------------------------------------------
+console.log('\n[9] Format shortcuts & guards');
+const dispatchKey = (target, init) => {
+  const ev = new window.KeyboardEvent('keydown', {
+    bubbles: true,
+    cancelable: true,
+    ...init,
+  });
+  target.dispatchEvent(ev);
+  return ev;
+};
+
+// ⌘⇧K → code block, prevented, no crash
+const ev1 = dispatchKey(pm(), { key: 'K', code: 'KeyK', metaKey: true, shiftKey: true });
+assert(ev1.defaultPrevented === true, '⌘⇧K preventDefault called');
+
+// ⌘K → link prompt path, prevented, no crash
+const ev2 = dispatchKey(pm(), { key: 'k', code: 'KeyK', metaKey: true });
+assert(ev2.defaultPrevented === true, '⌘K preventDefault called');
+
+// ⌘1 → heading command, prevented
+const ev3 = dispatchKey(pm(), { key: '1', code: 'Digit1', metaKey: true });
+assert(ev3.defaultPrevented === true, '⌘1 preventDefault called');
+
+// Guard: source mode disables all format shortcuts
+$('#source-toggle').click();
+await tick();
+assert(document.body.classList.contains('source-mode'), 'source mode active for guard test');
+const ev4 = dispatchKey(pm(), { key: 'K', code: 'KeyK', metaKey: true, shiftKey: true });
+assert(ev4.defaultPrevented === false, '⌘⇧K ignored in source mode');
+$('#source-toggle').click();
+await tick();
+assert(!document.body.classList.contains('source-mode'), 'back to WYSIWYG');
+
+// Guard: keydown in the source textarea / form fields is ignored
+const ev5 = dispatchKey($('#source'), { key: 'K', code: 'KeyK', metaKey: true, shiftKey: true });
+assert(ev5.defaultPrevented === false, '⌘⇧K ignored when typing in textarea');
+const ev6 = dispatchKey($('#zoom-in'), { key: 'k', code: 'KeyK', metaKey: true });
+assert(ev6.defaultPrevented === false, '⌘K ignored when button focused');
+
+// main.ts ⌘/ source toggle
+const ev7 = dispatchKey(document, { key: '/', code: 'Slash', metaKey: true });
+assert(ev7.defaultPrevented === true, '⌘/ preventDefault called');
+await tick();
+assert(document.body.classList.contains('source-mode'), '⌘/ toggles source mode');
+const ev8 = dispatchKey(document, { key: '/', code: 'Slash', metaKey: true });
+await tick();
+assert(!document.body.classList.contains('source-mode'), '⌘/ toggles back');
+
+// ---- editor still alive after all the poking --------------------------------
+const finalMd = await editor.getMarkdown();
+assert(finalMd.includes('# Welcome to Typora Clone'), 'editor healthy at end (getMarkdown works)');
+
+// ---- zoom quick check --------------------------------------------------------
+const z0 = pm().style.zoom;
+$('#zoom-in').click();
+assert(pm().style.zoom === '1.1', `zoom applied (${z0} → ${pm().style.zoom})`);
+$('#zoom-out').click();
+assert(pm().style.zoom === '1', `zoom back to 100% (${pm().style.zoom})`);
+
+// ---- summary ------------------------------------------------------------------
+console.log('\njsdom "not implemented" notices (expected):');
+for (const e of jsdomErrors) console.log('  -', e);
+console.log(`\n${passed} passed, ${failed} failed`);
+if (failed > 0) process.exit(1);
+console.log('SMOKE TEST PASSED');
