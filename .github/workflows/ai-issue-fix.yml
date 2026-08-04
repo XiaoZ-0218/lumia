@@ -35,10 +35,12 @@ jobs:
       RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
       # Headless auth for Kimi Code CLI (KIMI_MODEL_* synthesizes a provider in
       # memory). Model is selected by which label was applied.
-      KIMI_MODEL_NAME: ${{ github.event.label.name == 'ai-fix:deepseek' && 'deepseek-v4-flash' || 'kimi-for-coding' }}
+      # Kimi: k3-256k via the Kimi Code API — needs a Kimi Code Console API key
+      # (https://www.kimi.com/code console) in secret KIMI_API_KEY.
+      KIMI_MODEL_NAME: ${{ github.event.label.name == 'ai-fix:deepseek' && 'deepseek-v4-flash' || 'k3-256k' }}
       KIMI_MODEL_PROVIDER_TYPE: ${{ github.event.label.name == 'ai-fix:deepseek' && 'openai' || 'kimi' }}
       KIMI_MODEL_API_KEY: ${{ github.event.label.name == 'ai-fix:deepseek' && secrets.DEEPSEEK_API_KEY || secrets.KIMI_API_KEY }}
-      KIMI_MODEL_BASE_URL: ${{ github.event.label.name == 'ai-fix:deepseek' && 'https://api.deepseek.com/v1' || (vars.KIMI_BASE_URL || 'https://api.moonshot.ai/v1') }}
+      KIMI_MODEL_BASE_URL: ${{ github.event.label.name == 'ai-fix:deepseek' && 'https://api.deepseek.com/v1' || 'https://api.kimi.com/coding/v1' }}
       KIMI_DISABLE_TELEMETRY: "1"
     steps:
       - uses: actions/checkout@v4
