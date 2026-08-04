@@ -1,0 +1,12 @@
+/* View modes: focus mode + typewriter mode (Typora-style).
+   Both are no-ops in source mode. */
+
+/* Focus mode dims every top-level block except the caret's (.focus-active). */
+body.focus-mode:not(.source-mode) #editor .ProseMirror > * {
+  opacity: 0.25;
+  transition: opacity 0.2s ease;
+}
+
+body.focus-mode:not(.source-mode) #editor .ProseMirror > .focus-active {
+  opacity: 1;
+}

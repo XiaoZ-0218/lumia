@@ -1,0 +1,48 @@
+/* Print / PDF export: hide app chrome, let the theme's content styles render on white. */
+
+@media print {
+  .titlebar,
+  .sidebar,
+  .statusbar,
+  #source {
+    display: none !important;
+  }
+
+  html,
+  body {
+    height: auto;
+    overflow: visible;
+  }
+
+  body {
+    display: block;
+    background: #fff !important;
+  }
+
+  /* Undo the app's fixed grid layout so the doc flows across pages. */
+  #editor {
+    grid-column: auto;
+    grid-row: auto;
+    overflow: visible;
+  }
+
+  #editor .milkdown {
+    height: auto;
+  }
+
+  /* Beat the theme's content scoping (body.theme-x #editor .ProseMirror) for
+     layout; black text keeps dark themes readable on the white page. */
+  #editor .ProseMirror {
+    min-height: 0 !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #000 !important;
+    zoom: 1 !important;
+  }
+
+  /* If printing while in source mode, print the rendered doc instead. */
+  body.source-mode #editor .milkdown {
+    display: block !important;
+  }
+}

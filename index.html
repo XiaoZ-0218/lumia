@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Typora Clone</title>
+  </head>
+  <body class="theme-github">
+    <header class="titlebar">
+      <div class="traffic-lights" aria-hidden="true">
+        <span class="dot red"></span>
+        <span class="dot yellow"></span>
+        <span class="dot green"></span>
+      </div>
+      <span class="doc-title" id="doc-title">Untitled</span>
+      <div class="titlebar-right">
+        <button class="titlebar-btn" id="open-folder" title="Open folder" aria-label="Open folder">📂</button>
+        <button class="titlebar-btn" id="open-file" title="Open file (⌘O)" aria-label="Open file">Open</button>
+        <button class="titlebar-btn" id="save-file" title="Save file (⌘S)" aria-label="Save file">Save</button>
+        <button class="titlebar-btn" id="export-html" title="Export as HTML" aria-label="Export as HTML">HTML</button>
+        <button class="titlebar-btn" id="export-pdf" title="Print / export PDF (⌘P)" aria-label="Export as PDF">PDF</button>
+        <button class="titlebar-btn" id="sidebar-toggle" title="Toggle sidebar" aria-label="Toggle sidebar">☰</button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <section class="sidebar-section">
+        <h2>Files</h2>
+        <ul id="file-tree">
+          <li>welcome.md</li>
+          <li>README.md</li>
+          <li>notes/ideas.md</li>
+        </ul>
+      </section>
+      <section class="sidebar-section">
+        <h2>Outline</h2>
+        <ul id="outline">
+          <li>Welcome to Typora Clone</li>
+          <li>Write inline styles</li>
+          <li>Lists</li>
+          <li>Task lists</li>
+          <li>Blockquote</li>
+          <li>Code</li>
+          <li>Table</li>
+        </ul>
+      </section>
+    </aside>
+
+    <main id="editor">
+      <textarea id="source" spellcheck="false" placeholder="Source mode — edit the markdown directly"></textarea>
+    </main>
+
+    <footer class="statusbar">
+      <span id="word-count">0 words · 0 chars</span>
+      <div class="statusbar-right">
+        <button class="statusbar-btn" id="focus-toggle" title="Toggle focus mode (F8)">Focus</button>
+        <button class="statusbar-btn" id="typewriter-toggle" title="Toggle typewriter mode">Typewriter</button>
+        <select id="theme-select" title="Theme" aria-label="Theme"></select>
+        <button class="statusbar-btn" id="zoom-out" title="Zoom out (⌘-)" aria-label="Zoom out">−</button>
+        <button class="statusbar-btn" id="zoom-in" title="Zoom in (⌘+)" aria-label="Zoom in">+</button>
+        <button class="statusbar-btn" id="source-toggle" title="Toggle source mode (⌘/)">Source</button>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

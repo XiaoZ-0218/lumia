@@ -1,0 +1,210 @@
+/* Typora "Github" theme — port of Typora's built-in Github light theme. */
+
+:root,
+body.theme-github {
+  --bg: #ffffff;
+  --fg: #24292e;
+  --muted: #6a737d;
+  --border: #e1e4e8;
+  --sidebar-bg: #f6f8fa;
+  --accent: #0366d6;
+  --editor-max-width: 860px;
+}
+
+body.theme-github {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial,
+    sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  -webkit-font-smoothing: antialiased;
+}
+
+body.theme-github ::selection {
+  background: rgba(3, 102, 214, 0.2);
+}
+
+/* ---- editor ---- */
+
+body.theme-github #editor .ProseMirror {
+  max-width: var(--editor-max-width);
+  margin: 0 auto;
+  padding: 48px 56px 96px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--fg);
+  caret-color: var(--accent);
+  word-wrap: break-word;
+  outline: none;
+}
+
+body.theme-github #editor .ProseMirror > *:first-child { margin-top: 0; }
+body.theme-github #editor .ProseMirror > *:last-child { margin-bottom: 0; }
+
+body.theme-github #editor .ProseMirror p {
+  margin: 0 0 16px;
+  word-wrap: break-word;
+}
+
+/* ---- headings: github scale, h1/h2 underlined ---- */
+
+body.theme-github #editor .ProseMirror h1,
+body.theme-github #editor .ProseMirror h2,
+body.theme-github #editor .ProseMirror h3,
+body.theme-github #editor .ProseMirror h4,
+body.theme-github #editor .ProseMirror h5,
+body.theme-github #editor .ProseMirror h6 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+body.theme-github #editor .ProseMirror h1 {
+  margin: 0.67em 0;
+  padding-bottom: 0.3em;
+  font-size: 2em;
+  border-bottom: 1px solid var(--border);
+}
+
+body.theme-github #editor .ProseMirror h2 {
+  margin: 0.83em 0;
+  padding-bottom: 0.3em;
+  font-size: 1.5em;
+  border-bottom: 1px solid var(--border);
+}
+
+body.theme-github #editor .ProseMirror h3 { font-size: 1.25em; }
+body.theme-github #editor .ProseMirror h4 { font-size: 1em; }
+body.theme-github #editor .ProseMirror h5 { font-size: 0.875em; }
+body.theme-github #editor .ProseMirror h6 {
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+/* ---- inline ---- */
+
+body.theme-github #editor .ProseMirror a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+body.theme-github #editor .ProseMirror a:hover { text-decoration: underline; }
+
+/* ---- lists ---- */
+
+body.theme-github #editor .ProseMirror ul,
+body.theme-github #editor .ProseMirror ol {
+  margin: 0 0 16px;
+  padding-left: 2em;
+}
+
+body.theme-github #editor .ProseMirror ul { list-style: disc; }
+body.theme-github #editor .ProseMirror ol { list-style: decimal; }
+
+/* task lists — GFM items render as li[data-item-type="task"] with a checkbox node view */
+body.theme-github #editor .ProseMirror ul:has(> li[data-item-type="task"]) {
+  list-style: none;
+  padding-left: 0.25em;
+}
+
+body.theme-github #editor .ProseMirror li[data-item-type="task"] {
+  list-style: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4em;
+}
+
+body.theme-github #editor .ProseMirror li[data-item-type="task"] input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  margin: 5px 0 0;
+  border: 1px solid #c6cbd1;
+  border-radius: 2px;
+  background: #fff;
+  cursor: pointer;
+}
+
+body.theme-github #editor .ProseMirror li[data-item-type="task"] input[type="checkbox"]:checked {
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z' fill='%230366d6'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
+}
+
+/* ---- blockquote ---- */
+
+body.theme-github #editor .ProseMirror blockquote {
+  margin: 0 0 16px;
+  padding: 0 1em;
+  border-left: 0.25em solid var(--border);
+  color: var(--muted);
+}
+
+/* ---- code ---- */
+
+body.theme-github #editor .ProseMirror code,
+body.theme-github #editor .ProseMirror pre {
+  font-family: SFMono-Regular, Consolas, "Liberation Mono", Menlo, monospace;
+}
+
+body.theme-github #editor .ProseMirror code {
+  padding: 0.2em 0.4em;
+  font-size: 85%;
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+body.theme-github #editor .ProseMirror pre {
+  margin: 0 0 16px;
+  padding: 16px;
+  overflow: auto;
+  font-size: 85%;
+  line-height: 1.45;
+  background: #f6f8fa;
+  border-radius: 6px;
+}
+
+body.theme-github #editor .ProseMirror pre code {
+  padding: 0;
+  font-size: inherit;
+  background: transparent;
+  border-radius: 0;
+}
+
+/* ---- table ---- */
+
+body.theme-github #editor .ProseMirror table {
+  display: block;
+  width: 100%;
+  margin: 0 0 16px;
+  overflow: auto;
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+
+body.theme-github #editor .ProseMirror tr {
+  background: var(--bg);
+  border-top: 1px solid #c6cbd1;
+}
+
+body.theme-github #editor .ProseMirror tr:nth-child(2n) { background: #f6f8fa; }
+
+body.theme-github #editor .ProseMirror th,
+body.theme-github #editor .ProseMirror td {
+  padding: 6px 13px;
+  border: 1px solid var(--border);
+}
+
+body.theme-github #editor .ProseMirror th { font-weight: 600; }
+
+/* ---- hr, img ---- */
+
+body.theme-github #editor .ProseMirror hr {
+  height: 0.25em;
+  margin: 24px 0;
+  padding: 0;
+  border: 0;
+  background: var(--border);
+}
+
+body.theme-github #editor .ProseMirror img { max-width: 100%; }

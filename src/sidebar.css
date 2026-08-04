@@ -1,0 +1,58 @@
+/* Sidebar: tabs, file tree, outline. Consumes theme custom properties. */
+
+/* ---- tabs ---- */
+.sidebar-tabs-root { overflow: hidden; }
+
+.sidebar-tabs {
+  display: flex;
+  flex: none;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-tab {
+  flex: 1;
+  padding: 7px 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.sidebar-tab:hover { color: var(--fg); }
+.sidebar-tab.active { color: var(--fg); border-bottom-color: var(--accent); }
+
+.sidebar-panel { flex: 1; min-height: 0; overflow-y: auto; }
+.sidebar-panel[hidden] { display: none; }
+.sidebar-panel h2 { display: none; }
+
+/* ---- file tree ---- */
+#file-tree li, .outline-item { cursor: pointer; }
+
+.tree-caret {
+  display: inline-block;
+  width: 14px;
+  color: var(--muted);
+  font-size: 10px;
+  user-select: none;
+}
+
+.tree-dir > .tree-label { font-weight: 600; }
+.sidebar .tree-children { padding-left: 14px; }
+
+#file-tree li.active { color: var(--accent); font-weight: 600; }
+.tree-empty { color: var(--muted); font-style: italic; cursor: default; }
+
+/* ---- outline ---- */
+.outline-item.lvl-1 { padding-left: 8px; }
+.outline-item.lvl-2 { padding-left: 24px; }
+.outline-item.lvl-3 { padding-left: 40px; }
+.outline-item.lvl-4 { padding-left: 56px; }
+.outline-item.lvl-5 { padding-left: 72px; }
+.outline-item.lvl-6 { padding-left: 88px; }
+.outline-item.active { color: var(--accent); font-weight: 600; }
+
+/* ---- titlebar ---- */
+.titlebar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
