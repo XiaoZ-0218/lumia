@@ -3,8 +3,8 @@
 import './viewmodes.css';
 import { ready } from './editor';
 
-const FOCUS_KEY = 'typora-clone:focus';
-const TYPEWRITER_KEY = 'typora-clone:typewriter';
+const FOCUS_KEY = 'lumia:focus';
+const TYPEWRITER_KEY = 'lumia:typewriter';
 /** Keep the caret at this fraction of the editor's visible height. */
 const CARET_POS = 0.4;
 

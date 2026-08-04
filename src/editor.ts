@@ -31,7 +31,7 @@ const focusActivePlugin = $prose(
     }),
 );
 
-const WELCOME = `# Welcome to Typora Clone
+const WELCOME = `# Welcome to Lumia
 
 This is a **WYSIWYG** markdown editor that looks and feels like [Typora](https://typora.io/). Type markdown and watch it render as you go — no preview panel, no floating toolbar.
 

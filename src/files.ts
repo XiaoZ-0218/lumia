@@ -19,7 +19,7 @@ const MD_TYPES: FilePickerAcceptType = {
   description: 'Markdown',
   accept: { 'text/markdown': ['.md', '.markdown'] },
 };
-const DRAFT_KEY = 'typora-clone:draft';
+const DRAFT_KEY = 'lumia:draft';
 
 /** File name when there is no FS handle (input-file fallback open). */
 let fallbackName: string | null = null;

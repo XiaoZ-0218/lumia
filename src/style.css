@@ -1,4 +1,4 @@
-/* Base chrome for the Typora clone: titlebar / sidebar / statusbar.
+/* Base chrome for Lumia: titlebar / sidebar / statusbar.
    Consumes only the theme custom properties. Fallback values below make
    the app render even before any theme file is loaded; theme files are
    injected later and override them. */

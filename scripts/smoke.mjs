@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Runtime smoke test for the Typora clone.
+// Runtime smoke test for Lumia.
 // Boots the production bundle (dist/assets/index-*.js) inside jsdom and asserts
 // end-to-end behavior: editor boot, module init, outline, tabs, source mode,
 // HTML export, focus/typewriter modes, and format shortcut guards.
@@ -144,7 +144,7 @@ await waitFor(
   () => {
     const pm = document.querySelector('#editor .milkdown .ProseMirror');
     return (
-      pm && pm.textContent.includes('Welcome to Typora Clone') &&
+      pm && pm.textContent.includes('Welcome to Lumia') &&
       typeof window.__editor?.getMarkdown === 'function'
     );
   },
@@ -163,7 +163,7 @@ assert($('#editor .milkdown .ProseMirror') !== null, '#editor .milkdown .ProseMi
 assert($('#editor .milkdown .ProseMirror').getAttribute('contenteditable') === 'true',
   'ProseMirror is contenteditable');
 const welcomeMd = await editor.getMarkdown();
-assert(welcomeMd.includes('# Welcome to Typora Clone'), 'getMarkdown returns the welcome doc');
+assert(welcomeMd.includes('# Welcome to Lumia'), 'getMarkdown returns the welcome doc');
 assert(welcomeMd.includes('## Table'), 'getMarkdown contains all sections');
 
 await editor.setMarkdown('# Hello\n\nWorld of **smoke**');
@@ -216,7 +216,7 @@ await editor.setMarkdown(welcomeMd);
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'outline has 7 items from welcome doc');
 const items = $$('#outline .outline-item');
-assert(items[0].textContent === 'Welcome to Typora Clone', 'first outline item is the H1');
+assert(items[0].textContent === 'Welcome to Lumia', 'first outline item is the H1');
 assert(items[0].className.includes('lvl-1') && items[1].className.includes('lvl-2'),
   'heading levels reflected in classes');
 assert($$('#outline .outline-item.active').length === 1, 'one outline item is active');
@@ -240,7 +240,7 @@ $('#source-toggle').click();
 await tick();
 assert(document.body.classList.contains('source-mode'), 'source mode class applied');
 const ta = $('#source');
-assert(ta.value.includes('# Welcome to Typora Clone'), 'textarea populated with markdown');
+assert(ta.value.includes('# Welcome to Lumia'), 'textarea populated with markdown');
 const edited = '# Edited in source\n\n- item one\n- item two';
 ta.value = edited;
 ta.dispatchEvent(new Event('input', { bubbles: true }));
@@ -257,7 +257,7 @@ await editor.setMarkdown('# Post Toggle Title\n\nBody text');
 await waitFor(() => $('#doc-title')?.textContent === 'Post Toggle Title',
   'title follows doc through the listener');
 await editor.setMarkdown(welcomeMd);
-await waitFor(() => $('#doc-title')?.textContent === 'Welcome to Typora Clone',
+await waitFor(() => $('#doc-title')?.textContent === 'Welcome to Lumia',
   'title restored from doc');
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'outline restored after source round-trip');
@@ -267,7 +267,7 @@ console.log('\n[6] HTML export');
 $('#export-html').click();
 await waitFor(() => downloads.length > 0, 'export download initiated');
 const dl = downloads[downloads.length - 1];
-assert(dl.download === 'Welcome to Typora Clone.html', `export filename (got "${dl.download}")`);
+assert(dl.download === 'Welcome to Lumia.html', `export filename (got "${dl.download}")`);
 const blob = createdBlobs.get(dl.href);
 assert(blob !== undefined, 'download Blob captured');
 const exportHtml = await blob.text();
@@ -276,7 +276,7 @@ assert(exportHtml.includes('<body class="theme-github">'), 'body carries theme c
 assert(exportHtml.includes('<main id="editor"><div class="ProseMirror">'),
   'editor structure reproduced for theme CSS');
 assert(exportHtml.includes('body.theme-github'), 'theme CSS embedded');
-assert(exportHtml.includes('<title>Welcome to Typora Clone</title>'), 'export title set');
+assert(exportHtml.includes('<title>Welcome to Lumia</title>'), 'export title set');
 
 // ---- 7. files fallback save (no FS Access API → download) --------------------
 console.log('\n[7] Files fallback save');
@@ -284,16 +284,16 @@ const dlCount = downloads.length;
 $('#save-file').click();
 await waitFor(() => downloads.length === dlCount + 1, 'save fallback download initiated');
 const saveDl = downloads[downloads.length - 1];
-assert(saveDl.download === 'Welcome to Typora Clone.md', `save filename (got "${saveDl.download}")`);
+assert(saveDl.download === 'Welcome to Lumia.md', `save filename (got "${saveDl.download}")`);
 const saveBlob = createdBlobs.get(saveDl.href);
 const savedText = await saveBlob.text();
-assert(savedText.includes('# Welcome to Typora Clone'), 'saved markdown matches the doc');
+assert(savedText.includes('# Welcome to Lumia'), 'saved markdown matches the doc');
 
 // ---- 8. focus mode / typewriter ----------------------------------------------
 console.log('\n[8] View modes');
 $('#focus-toggle').click();
 assert(document.body.classList.contains('focus-mode'), 'focus mode class toggled on');
-assert(localStorage.getItem('typora-clone:focus') === '1', 'focus state persisted');
+assert(localStorage.getItem('lumia:focus') === '1', 'focus state persisted');
 // Move the caret into the first paragraph via a real ProseMirror transaction;
 // the focusActivePlugin decoration should mark that block .focus-active.
 // Note: use the bundle's own view + Selection classes (imported copies would
@@ -322,8 +322,8 @@ await tick(60); // let rAF fire
 assert(document.body.classList.contains('typewriter-mode'), 'typewriter scroll ran without throwing');
 $('#typewriter-toggle').click();
 assert(!document.body.classList.contains('typewriter-mode'), 'typewriter mode toggled off');
-localStorage.removeItem('typora-clone:focus');
-localStorage.removeItem('typora-clone:typewriter');
+localStorage.removeItem('lumia:focus');
+localStorage.removeItem('lumia:typewriter');
 
 // ---- 9. format shortcuts + guards ---------------------------------------------
 console.log('\n[9] Format shortcuts & guards');
@@ -376,7 +376,7 @@ assert(!document.body.classList.contains('source-mode'), '⌘/ toggles back');
 
 // ---- editor still alive after all the poking --------------------------------
 const finalMd = await editor.getMarkdown();
-assert(finalMd.includes('# Welcome to Typora Clone'), 'editor healthy at end (getMarkdown works)');
+assert(finalMd.includes('# Welcome to Lumia'), 'editor healthy at end (getMarkdown works)');
 
 // ---- zoom quick check --------------------------------------------------------
 const z0 = pm().style.zoom;

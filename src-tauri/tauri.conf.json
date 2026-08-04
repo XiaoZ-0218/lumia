@@ -1,9 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Typora Clone",
-  "mainBinaryName": "typora-clone",
+  "productName": "Lumia",
+  "mainBinaryName": "lumia",
   "version": "0.1.0",
-  "identifier": "com.typora.clone",
+  "identifier": "com.lumia.app",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
@@ -13,7 +13,7 @@
   "app": {
     "windows": [
       {
-        "title": "Typora Clone",
+        "title": "Lumia",
         "width": 1200,
         "height": 800,
         "minWidth": 800,

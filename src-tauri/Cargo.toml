@@ -1,14 +1,14 @@
 [package]
-name = "typora-clone"
+name = "lumia"
 version = "0.1.0"
-description = "A Typora-clone desktop app built with Tauri v2"
+description = "Lumia — a Typora-like desktop markdown editor built with Tauri v2"
 edition = "2021"
 rust-version = "1.90"
 
 # The lib target is required by Tauri v2 (staticlib/cdylib for mobile, rlib for desktop).
-# src/main.rs is auto-detected as the binary, so the packaged binary is "typora-clone".
+# src/main.rs is auto-detected as the binary, so the packaged binary is "lumia".
 [lib]
-name = "typora_clone_lib"
+name = "lumia_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
