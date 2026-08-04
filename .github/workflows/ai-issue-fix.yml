@@ -32,9 +32,14 @@ jobs:
       ISSUE_TITLE: ${{ github.event.issue.title }}
       ISSUE_BODY: ${{ github.event.issue.body }}
       # Headless auth for Kimi Code CLI (KIMI_MODEL_* synthesizes a provider in memory).
-      # If your key comes from platform.moonshot.cn (China), set repo variable:
-      #   gh variable set KIMI_BASE_URL -b "https://api.moonshot.cn/v1"
-      KIMI_MODEL_NAME: kimi-for-coding
+      # Model is configurable via repo variables — e.g. to use DeepSeek:
+      #   gh secret set KIMI_API_KEY            # your DeepSeek key
+      #   gh variable set KIMI_MODEL_NAME -b "deepseek-chat"
+      #   gh variable set KIMI_MODEL_PROVIDER_TYPE -b "openai"
+      #   gh variable set KIMI_BASE_URL -b "https://api.deepseek.com/v1"
+      # (Moonshot China keys: set KIMI_BASE_URL to https://api.moonshot.cn/v1)
+      KIMI_MODEL_NAME: ${{ vars.KIMI_MODEL_NAME || 'kimi-for-coding' }}
+      KIMI_MODEL_PROVIDER_TYPE: ${{ vars.KIMI_MODEL_PROVIDER_TYPE || 'kimi' }}
       KIMI_MODEL_API_KEY: ${{ secrets.KIMI_API_KEY }}
       KIMI_MODEL_BASE_URL: ${{ vars.KIMI_BASE_URL || 'https://api.moonshot.ai/v1' }}
       KIMI_DISABLE_TELEMETRY: "1"
