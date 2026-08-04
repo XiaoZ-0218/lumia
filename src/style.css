@@ -1,0 +1,238 @@
+/* Base chrome for the Typora clone: titlebar / sidebar / statusbar.
+   Consumes only the theme custom properties. Fallback values below make
+   the app render even before any theme file is loaded; theme files are
+   injected later and override them. */
+
+:root {
+  --bg: #ffffff;
+  --fg: #24292e;
+  --muted: #6a737d;
+  --border: #e1e4e8;
+  --sidebar-bg: #f6f8fa;
+  --accent: #0969da;
+  --editor-max-width: 48rem;
+}
+
+* { box-sizing: border-box; }
+
+html,
+body { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+    Arial, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  display: grid;
+  grid-template-rows: 38px 1fr 26px;
+  grid-template-columns: 260px 1fr;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ---- titlebar ---- */
+
+.titlebar {
+  grid-column: 1 / -1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  user-select: none;
+}
+
+.traffic-lights {
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.dot.red { background: #ff5f57; }
+.dot.yellow { background: #febc2e; }
+.dot.green { background: #28c840; }
+
+.doc-title {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.titlebar-right {
+  margin-left: auto;
+  display: flex;
+  gap: 4px;
+}
+
+.titlebar-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.titlebar-btn:hover {
+  background: var(--border);
+  color: var(--fg);
+}
+
+/* ---- sidebar ---- */
+
+.sidebar {
+  grid-column: 1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+.sidebar-section {
+  padding: 12px 10px;
+}
+
+.sidebar-section h2 {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar li {
+  font-size: 13px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: var(--fg);
+  cursor: default;
+}
+
+.sidebar li:hover {
+  background: var(--border);
+}
+
+body.no-sidebar .sidebar { display: none; }
+body.no-sidebar #editor { grid-column: 1 / -1; }
+
+/* ---- editor ---- */
+
+#editor {
+  grid-column: 2;
+  grid-row: 2;
+  background: var(--bg);
+  overflow-y: auto;
+}
+
+#editor .milkdown {
+  height: 100%;
+}
+
+/* Fallback look for the editor content; theme files style .ProseMirror too
+   and are injected later, so their rules win on conflicts. */
+#editor .ProseMirror {
+  outline: none;
+  min-height: 100%;
+  max-width: var(--editor-max-width);
+  margin: 0 auto;
+  padding: 24px 40px 80px;
+  caret-color: var(--fg);
+}
+
+/* ---- source mode (plain-textarea markdown view) ---- */
+
+#source {
+  display: none;
+  width: 100%;
+  height: 100%;
+  border: none;
+  resize: none;
+  outline: none;
+  padding: 24px 40px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.7;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+body.source-mode #source { display: block; }
+body.source-mode #editor .milkdown { display: none; }
+
+/* ---- statusbar ---- */
+
+.statusbar {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  border-top: 1px solid var(--border);
+  background: var(--bg);
+  font-size: 11px;
+  color: var(--muted);
+  user-select: none;
+}
+
+.statusbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.statusbar-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1;
+  padding: 3px 7px;
+  border-radius: 4px;
+}
+
+.statusbar-btn:hover {
+  background: var(--border);
+  color: var(--fg);
+}
+
+.statusbar-btn.active {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.statusbar select {
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 2px 4px;
+  outline: none;
+}
