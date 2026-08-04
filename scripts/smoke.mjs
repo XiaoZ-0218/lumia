@@ -173,6 +173,24 @@ await editor.setMarkdown(welcomeMd);
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'outline re-render after restore');
 
+// ---- 1b. task list checkboxes (node view + toggle) ---------------------------
+console.log('\n[1b] Task list checkboxes');
+const taskItems = $$('#editor .milkdown .ProseMirror li[data-item-type="task"]');
+assert(taskItems.length === 3, `task items render as li[data-item-type="task"] (got ${taskItems.length})`);
+assert(taskItems.every((li) => li.querySelector('input[type="checkbox"]') !== null),
+  'each task item contains a checkbox input');
+assert(taskItems.filter((li) => li.querySelector('input[type="checkbox"]').checked).length === 2,
+  'welcome doc: two of three task items start checked');
+const taskBox = taskItems[0].querySelector('input[type="checkbox"]');
+taskBox.checked = false;
+taskBox.dispatchEvent(new window.Event('change', { bubbles: true }));
+await tick(30);
+const toggledMd = await editor.getMarkdown();
+assert(/^[-*] \[ \] WYSIWYG editing$/m.test(toggledMd), 'checkbox change toggles the task item state');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'outline restored after task toggle');
+
 // ---- 2. all feature modules init without throwing ---------------------------
 console.log('\n[2] Feature module init (sidebar / export / files / format / viewmodes)');
 assert($('.sidebar-tabs') !== null, 'sidebar tabs built');

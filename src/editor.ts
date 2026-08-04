@@ -1,9 +1,11 @@
-import { Editor, editorViewCtx, parserCtx, rootCtx, serializerCtx } from '@milkdown/core';
+import { Editor, editorViewCtx, editorViewOptionsCtx, parserCtx, rootCtx, serializerCtx } from '@milkdown/core';
 import type { Ctx } from '@milkdown/ctx';
 import { history } from '@milkdown/plugin-history';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { commonmark } from '@milkdown/preset-commonmark';
 import { gfm } from '@milkdown/preset-gfm';
+import type { Node } from '@milkdown/prose/model';
+import type { EditorView, NodeView } from '@milkdown/prose/view';
 
 const WELCOME = `# Welcome to Typora Clone
 
@@ -112,10 +114,84 @@ export function refreshStats(md: string) {
   renderTitle(md.match(/^#\s+(.+)$/m)?.[1]?.trim() ?? '');
 }
 
+/**
+ * Node view for GFM task list items (`- [x] foo`). Milkdown's preset-gfm
+ * renders task items as a plain `<li data-item-type="task" data-checked>` with
+ * no checkbox, so we prepend a real togglable checkbox (Typora parity) while
+ * keeping the `data-item-type` / `data-checked` attributes the themes style.
+ */
+class TaskItemView implements NodeView {
+  dom: HTMLElement;
+  contentDOM: HTMLElement;
+  private checkbox: HTMLInputElement;
+
+  constructor(node: Node, view: EditorView, getPos: () => number | undefined) {
+    const li = document.createElement('li');
+    // Mirror Milkdown's list_item toDOM for task items.
+    li.dataset.itemType = 'task';
+    li.dataset.label = String(node.attrs.label ?? '');
+    li.dataset.listType = String(node.attrs.listType ?? 'bullet');
+    li.dataset.spread = String(node.attrs.spread);
+    li.dataset.checked = String(node.attrs.checked);
+    this.dom = li;
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.contentEditable = 'false';
+    checkbox.checked = node.attrs.checked === true;
+    checkbox.addEventListener('change', () => {
+      const pos = getPos();
+      if (pos == null) return;
+      const item = view.state.doc.nodeAt(pos);
+      if (!item || item.type.name !== 'list_item') return;
+      view.dispatch(
+        view.state.tr.setNodeMarkup(pos, undefined, { ...item.attrs, checked: checkbox.checked }),
+      );
+    });
+    this.checkbox = checkbox;
+    li.appendChild(checkbox);
+
+    const content = document.createElement('div');
+    this.contentDOM = content;
+    li.appendChild(content);
+  }
+
+  update(node: Node): boolean {
+    // A node of another type — or a task item that became a plain item —
+    // lets ProseMirror fall back to the default toDOM rendering.
+    if (node.type.name !== 'list_item' || node.attrs.checked == null) return false;
+    this.checkbox.checked = node.attrs.checked === true;
+    this.dom.dataset.checked = String(node.attrs.checked);
+    return true;
+  }
+
+  /** Leave checkbox interactions (toggle + click) to the checkbox itself. */
+  stopEvent(event: Event): boolean {
+    return event.target === this.checkbox;
+  }
+}
+
+function createTaskItemNodeView(
+  node: Node,
+  view: EditorView,
+  getPos: () => number | undefined,
+): NodeView {
+  // Plain list items (checked == null) keep Milkdown's default rendering.
+  if (node.attrs.checked == null) return null as unknown as NodeView;
+  return new TaskItemView(node, view, getPos);
+}
+
 async function boot(): Promise<void> {
   const editor = await Editor.make()
     .config((ctx) => {
       ctx.set(rootCtx, document.getElementById('editor') as HTMLElement);
+      ctx.update(editorViewOptionsCtx, (options) => ({
+        ...options,
+        nodeViews: {
+          ...options.nodeViews,
+          list_item: createTaskItemNodeView,
+        },
+      }));
       ctx.get(listenerCtx).updated((_ctx, doc) => {
         renderStats(doc.textBetween(0, doc.content.size, '\n'));
         renderTitle(titleFromDoc(doc));

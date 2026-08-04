@@ -83,12 +83,16 @@ body.theme-newsprint #editor .ProseMirror li::marker {
   color: var(--muted);
 }
 
-body.theme-newsprint #editor .ProseMirror .task-list-item {
+body.theme-newsprint #editor .ProseMirror li[data-item-type="task"] {
   list-style: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4em;
 }
 
-body.theme-newsprint #editor .ProseMirror input[type="checkbox"] {
-  margin-right: 0.4em;
+body.theme-newsprint #editor .ProseMirror li[data-item-type="task"] input[type="checkbox"] {
+  flex: none;
+  margin-top: 0.3em;
   accent-color: var(--accent);
 }
 

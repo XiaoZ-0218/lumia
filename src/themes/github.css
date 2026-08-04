@@ -101,23 +101,20 @@ body.theme-github #editor .ProseMirror ol {
 body.theme-github #editor .ProseMirror ul { list-style: disc; }
 body.theme-github #editor .ProseMirror ol { list-style: decimal; }
 
-/* task lists */
-body.theme-github #editor .ProseMirror ul[data-type="taskList"],
-body.theme-github #editor .ProseMirror ul.contains-task-list {
+/* task lists — GFM items render as li[data-item-type="task"] with a checkbox node view */
+body.theme-github #editor .ProseMirror ul:has(> li[data-item-type="task"]) {
   list-style: none;
   padding-left: 0.25em;
 }
 
-body.theme-github #editor .ProseMirror li[data-type="taskItem"],
-body.theme-github #editor .ProseMirror li.task-list-item {
+body.theme-github #editor .ProseMirror li[data-item-type="task"] {
   list-style: none;
   display: flex;
   align-items: flex-start;
   gap: 0.4em;
 }
 
-body.theme-github #editor .ProseMirror li[data-type="taskItem"] input[type="checkbox"],
-body.theme-github #editor .ProseMirror li.task-list-item input[type="checkbox"] {
+body.theme-github #editor .ProseMirror li[data-item-type="task"] input[type="checkbox"] {
   appearance: none;
   -webkit-appearance: none;
   flex: none;
@@ -130,8 +127,7 @@ body.theme-github #editor .ProseMirror li.task-list-item input[type="checkbox"] 
   cursor: pointer;
 }
 
-body.theme-github #editor .ProseMirror li[data-type="taskItem"] input[type="checkbox"]:checked,
-body.theme-github #editor .ProseMirror li.task-list-item input[type="checkbox"]:checked {
+body.theme-github #editor .ProseMirror li[data-item-type="task"] input[type="checkbox"]:checked {
   background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z' fill='%230366d6'/%3E%3C/svg%3E") center / 100% 100% no-repeat;
 }
 
