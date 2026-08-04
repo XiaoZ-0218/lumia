@@ -1,4 +1,4 @@
-# Typora Clone
+# Lumia
 
 一个外观和手感都类似 [Typora](https://typora.io/) 的所见即所得（WYSIWYG）Markdown 编辑器。输入 Markdown 即时渲染 —— 没有预览面板，没有悬浮工具栏。
 

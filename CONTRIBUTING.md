@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest in contributing to Typora Clone! This document explains how to report bugs, propose features, and submit changes.
+Thanks for your interest in contributing to Lumia! This document explains how to report bugs, propose features, and submit changes.
 
 ## Reporting Bugs
 
