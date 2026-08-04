@@ -1,102 +1,106 @@
 # Typora Clone
 
-一个外观和手感都类似 [Typora](https://typora.io/) 的所见即所得（WYSIWYG）Markdown 编辑器。输入 Markdown 即时渲染 —— 没有预览面板，没有悬浮工具栏。
+A WYSIWYG markdown editor that looks and feels like [Typora](https://typora.io/). Type markdown and watch it render as you go — no preview panel, no floating toolbar.
 
-[English](README_EN.md) | 中文
+English | [中文](README_CN.md)
 
-## 功能特性
+## Features
 
-- **所见即所得编辑**：基于 Milkdown / ProseMirror，支持 CommonMark 与 GFM（表格、任务列表、删除线）
-- **源码模式**：一键在所见即所得与 Markdown 源码之间切换（`⌘/`）
-- **文件管理**：打开 / 保存 `.md` 文件（`⌘O` / `⌘S`），支持浏览器 File System Access API 与 Tauri 原生文件对话框；不支持时自动降级为文件选择 / 下载
-- **侧边栏**：文件树（打开文件夹浏览）与文档大纲两个标签页，大纲点击可跳转
-- **导出**：导出独立 HTML 文件（内嵌当前主题样式），或打印 / 导出 PDF（`⌘P`）
-- **主题**：内置 4 套主题 —— github、newsprint、night、pixyll
-- **视图模式**：专注模式（F8，淡出非当前段落）与打字机模式（光标保持居中），状态持久化
-- **缩放**：编辑器字号缩放（`⌘+` / `⌘-`，50%–200%）
-- **自动保存**：草稿每 500ms 防抖写入 localStorage，重启后自动恢复
-- **字数统计**：状态栏实时显示字数与字符数
+- **WYSIWYG editing**: built on Milkdown / ProseMirror with CommonMark + GFM (tables, task lists, strikethrough)
+- **Source mode**: toggle between WYSIWYG and raw markdown (`⌘/`)
+- **File management**: open / save `.md` files (`⌘O` / `⌘S`) via the File System Access API or native Tauri dialogs, with automatic fallbacks (file input / download) elsewhere
+- **Sidebar**: Files and Outline tabs — browse a folder's file tree, jump to headings from the outline
+- **Export**: standalone HTML download with the active theme embedded, or print / export PDF (`⌘P`)
+- **Themes**: 4 built-in themes — github, newsprint, night, pixyll
+- **View modes**: focus mode (F8, dims all but the active block) and typewriter mode (keeps the caret centered), persisted across sessions
+- **Zoom**: editor font scaling (`⌘+` / `⌘-`, 50%–200%)
+- **Autosave**: drafts are debounced to localStorage every 500 ms and restored on launch
+- **Word count**: live word / character stats in the status bar
 
-## 技术栈
+## Tech Stack
 
-- [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/) —— 构建与开发
-- [Milkdown](https://milkdown.dev/) 7（ProseMirror）—— 编辑器内核
-- [Tauri](https://v2.tauri.app/) 2 —— 桌面端外壳（可选，纯浏览器亦可运行）
+- [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/) — build and dev tooling
+- [Milkdown](https://milkdown.dev/) 7 (ProseMirror) — editor core
+- [Tauri](https://v2.tauri.app/) 2 — optional desktop shell (the app also runs standalone in a browser)
 
-## 快速开始
+## Getting Started
 
 ```bash
 npm install
-npm run dev        # 启动 Vite 开发服务器（浏览器版）
+npm run dev        # start the Vite dev server (browser version)
 ```
 
-桌面版（需要 Rust 工具链）：
+Desktop app (requires the Rust toolchain):
 
 ```bash
-npm run tauri:dev      # 开发模式
-npm run tauri:build    # 打包桌面应用
+npm run tauri:dev      # dev mode
+npm run tauri:build    # bundle the desktop app
 ```
 
-## 构建与测试
+## Build & Test
 
 ```bash
-npm run build      # tsc 类型检查 + vite 构建到 dist/
-npm test           # 安装 jsdom、构建并运行 scripts/smoke.mjs 冒烟测试
+npm run build      # tsc type-check + vite build into dist/
+npm test           # install jsdom, build, and run the scripts/smoke.mjs smoke test
 ```
 
-CI（`.github/workflows/ci.yml`）在每次 push / PR 时运行 `npm ci && npm test`。
+CI (`.github/workflows/ci.yml`) runs `npm ci && npm test` on every push / pull request.
 
-## 快捷键
+## Keyboard Shortcuts
 
-`⌘` 在 Windows / Linux 上对应 `Ctrl`。
+`⌘` maps to `Ctrl` on Windows / Linux.
 
-### 文件与视图
+### Files & View
 
-| 快捷键 | 功能 |
-| ------ | ---- |
-| `⌘O` / `⌘S` | 打开 / 保存 Markdown 文件 |
-| `⌘P` | 打印 / 导出 PDF |
-| `⌘/` | 切换源码模式 |
-| `⌘+` / `⌘-` | 放大 / 缩小 |
-| `F8` | 专注模式 |
+| Shortcut | Action |
+| -------- | ------ |
+| `⌘O` / `⌘S` | Open / save a markdown file |
+| `⌘P` | Print / export PDF |
+| `⌘/` | Toggle source mode |
+| `⌘+` / `⌘-` | Zoom in / out |
+| `F8` | Focus mode |
 
-### 格式（仅在所见即所得编辑器内生效）
+### Formatting (active only inside the WYSIWYG editor)
 
-| 快捷键 | 功能 |
-| ------ | ---- |
-| `⌘0`–`⌘6` | 正文 / 标题 1–6（同级再按一次还原为正文） |
-| `⌘K` | 插入链接 |
-| `⌘⇧K` | 代码块 |
-| `⌘⇧X` | 删除线 |
-| `⌘T` | 插入 3×3 表格 |
-| `⌘⌥Q` | 引用块 |
-| `⌘⌥U` / `⌘⌥O` | 无序 / 有序列表 |
-| `⌘⌥X` | 任务列表项切换 |
+| Shortcut | Action |
+| -------- | ------ |
+| `⌘0`–`⌘6` | Paragraph / heading 1–6 (press the same level again to revert) |
+| `⌘K` | Insert link |
+| `⌘⇧K` | Code block |
+| `⌘⇧X` | Strikethrough |
+| `⌘T` | Insert a 3×3 table |
+| `⌘⌥Q` | Blockquote |
+| `⌘⌥U` / `⌘⌥O` | Bullet / ordered list |
+| `⌘⌥X` | Toggle task list item |
 
-## 项目结构
+## Project Structure
 
 ```
-├── index.html          # 应用骨架（标题栏、侧边栏、编辑器、状态栏）
+├── index.html          # App shell (title bar, sidebar, editor, status bar)
 ├── src/
-│   ├── main.ts         # 入口：主题、源码模式、缩放、模块装配
-│   ├── editor.ts       # Milkdown 编辑器封装（getMarkdown / setMarkdown / onUpdate）
-│   ├── sidebar.ts      # 文件树 + 大纲标签页
-│   ├── files.ts        # 打开 / 保存 / 自动保存草稿
-│   ├── export.ts       # HTML 导出与打印 / PDF
-│   ├── format.ts       # 格式快捷键
-│   ├── viewmodes.ts    # 专注 / 打字机模式
-│   ├── tauri-bridge.ts # Tauri 与浏览器 API 的统一桥接
-│   └── themes/         # 主题 CSS（构建时自动收集）
-├── src-tauri/          # Tauri 桌面端（Rust）
-└── scripts/smoke.mjs   # jsdom 冒烟测试（对生产构建做端到端断言）
+│   ├── main.ts         # Entry point: themes, source mode, zoom, module wiring
+│   ├── editor.ts       # Milkdown wrapper (getMarkdown / setMarkdown / onUpdate)
+│   ├── sidebar.ts      # File tree + outline tabs
+│   ├── files.ts        # Open / save / draft autosave
+│   ├── export.ts       # HTML export and print / PDF
+│   ├── format.ts       # Formatting shortcuts
+│   ├── viewmodes.ts    # Focus / typewriter modes
+│   ├── tauri-bridge.ts # Unified bridge over Tauri and browser APIs
+│   └── themes/         # Theme CSS (collected at build time)
+├── src-tauri/          # Tauri desktop shell (Rust)
+└── scripts/smoke.mjs   # jsdom smoke test (end-to-end assertions on the production build)
 ```
 
-## 浏览器兼容性
+## Browser Compatibility
 
-- 完整功能需要支持 File System Access API 的浏览器（Chrome / Edge）
-- 其他浏览器自动降级：打开用 `<input type="file">`，保存用下载副本
-- 桌面端通过 Tauri 获得原生文件对话框与文件读写
+- Full functionality requires a browser with the File System Access API (Chrome / Edge)
+- Other browsers fall back automatically: `<input type="file">` for open, a downloaded copy for save
+- The desktop build uses native file dialogs and file I/O via Tauri
+
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs, propose features, and submit pull requests.
 
 ## License
 
-待定（项目尚未声明开源许可证）。
+[MIT](LICENSE)
