@@ -1,7 +1,7 @@
 name: AI Issue Fix
 
 # Triggers when the repo owner labels an issue:
-#   ai-fix          -> fix with Kimi (kimi-for-coding, secret KIMI_API_KEY)
+#   ai-fix:kimi     -> fix with Kimi (kimi-for-coding, secret KIMI_API_KEY)
 #   ai-fix:deepseek -> fix with DeepSeek (deepseek-v4-flash, secret DEEPSEEK_API_KEY)
 #
 # Kimi Code CLI reads the issue, fixes the bug on a branch, runs the build +
@@ -23,9 +23,9 @@ concurrency:
 
 jobs:
   fix:
-    # Only run when the repo owner applies an ai-fix* label — labels from
+    # Only run when the repo owner applies an ai-fix:* label — labels from
     # anyone else are ignored.
-    if: startsWith(github.event.label.name, 'ai-fix') && github.event.sender.login == 'XiaoZ-0218'
+    if: startsWith(github.event.label.name, 'ai-fix:') && github.event.sender.login == 'XiaoZ-0218'
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
