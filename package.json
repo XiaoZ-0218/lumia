@@ -20,7 +20,9 @@
     "@milkdown/preset-gfm": "7.22.0",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-dialog": "^2.7.2",
-    "@tauri-apps/plugin-fs": "^2.5.1"
+    "@tauri-apps/plugin-fs": "^2.5.1",
+    "@milkdown/prose": "7.22.0",
+    "@milkdown/utils": "7.22.0"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.11.4",
