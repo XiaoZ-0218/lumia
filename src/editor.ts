@@ -5,7 +5,31 @@ import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { commonmark } from '@milkdown/preset-commonmark';
 import { gfm } from '@milkdown/preset-gfm';
 import type { Node } from '@milkdown/prose/model';
+import { Plugin, PluginKey } from '@milkdown/prose/state';
+import { Decoration, DecorationSet } from '@milkdown/prose/view';
 import type { EditorView, NodeView } from '@milkdown/prose/view';
+import { $prose } from '@milkdown/utils';
+
+// Marks the top-level block containing the caret with .focus-active, so focus
+// mode can dim everything else. A decoration (not manual DOM classes), because
+// ProseMirror redraws editable DOM from state and would wipe external classes.
+const focusActivePlugin = $prose(
+  () =>
+    new Plugin({
+      key: new PluginKey('focus-active'),
+      props: {
+        decorations(state) {
+          if (!document.body.classList.contains('focus-mode')) return null;
+          const { $from } = state.selection;
+          if ($from.depth < 1) return null;
+          const deco = Decoration.node($from.before(1), $from.after(1), {
+            class: 'focus-active',
+          });
+          return DecorationSet.create(state.doc, [deco]);
+        },
+      },
+    }),
+);
 
 const WELCOME = `# Welcome to Typora Clone
 
@@ -57,6 +81,8 @@ export interface EditorAPI {
   setMarkdown(md: string): Promise<void>;
   /** Run an arbitrary action against the Milkdown ctx (e.g. callCommand). */
   call<T>(fn: (ctx: Ctx) => T): T;
+  /** The ProseMirror view (for tests / advanced integrations). */
+  getView(): EditorView;
 }
 
 type UpdateHandler = (markdown: string) => void;
@@ -202,6 +228,7 @@ async function boot(): Promise<void> {
     .use(gfm)
     .use(history)
     .use(listener)
+    .use(focusActivePlugin)
     .create();
 
   const getMarkdown = async (): Promise<string> =>
@@ -220,7 +247,12 @@ async function boot(): Promise<void> {
     });
   };
 
-  window.__editor = { getMarkdown, setMarkdown, call: (fn) => editor.action(fn) };
+  window.__editor = {
+    getMarkdown,
+    setMarkdown,
+    call: (fn) => editor.action(fn),
+    getView: () => editor.action((ctx) => ctx.get(editorViewCtx)),
+  };
 
   await setMarkdown(WELCOME);
   refreshStats(WELCOME);

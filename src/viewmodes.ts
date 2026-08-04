@@ -37,25 +37,24 @@ function caretRect(): DOMRect | null {
 }
 
 // ---- focus mode ----
+// The active block is marked by the focusActivePlugin decoration in editor.ts
+// (ProseMirror-managed); here we only toggle the body class and force a
+// redraw so decorations recompute.
 
-function updateFocus(): void {
-  if (inSourceMode()) return;
-  const pm = document.querySelector('#editor .ProseMirror');
-  if (!pm) return;
-  pm.querySelector('.focus-active')?.classList.remove('focus-active');
-  activeBlock()?.classList.add('focus-active');
-}
-
-function clearFocus(): void {
-  document.querySelector('#editor .ProseMirror .focus-active')?.classList.remove('focus-active');
+function redrawEditor(): void {
+  void ready
+    .then(() => {
+      const view = window.__editor.getView();
+      view.dispatch(view.state.tr.setMeta('focus-mode', true));
+    })
+    .catch(() => {});
 }
 
 function setFocus(on: boolean): void {
   document.body.classList.toggle('focus-mode', on);
   focusToggle.classList.toggle('active', on);
   localStorage.setItem(FOCUS_KEY, on ? '1' : '0');
-  if (on) updateFocus();
-  else clearFocus();
+  redrawEditor();
 }
 
 // ---- typewriter mode ----
@@ -93,8 +92,19 @@ function setTypewriter(on: boolean): void {
 
 function track(): void {
   if (inSourceMode()) return;
-  if (document.body.classList.contains('focus-mode')) updateFocus();
   if (document.body.classList.contains('typewriter-mode')) scheduleScroll();
+}
+
+// Clicks reach us before ProseMirror has settled the DOM selection, so defer
+// tracking to the next frame to read the caret's final position.
+let trackFrame = 0;
+
+function scheduleTrack(): void {
+  if (trackFrame) return;
+  trackFrame = requestAnimationFrame(() => {
+    trackFrame = 0;
+    track();
+  });
 }
 
 export function initViewModes(): void {
@@ -111,9 +121,10 @@ export function initViewModes(): void {
       setFocus(!document.body.classList.contains('focus-mode'));
     }
   });
-  document.addEventListener('selectionchange', track);
-  document.addEventListener('keyup', track);
-  document.addEventListener('click', track);
+  document.addEventListener('selectionchange', scheduleTrack);
+  document.addEventListener('keyup', scheduleTrack);
+  document.addEventListener('mouseup', scheduleTrack);
+  document.addEventListener('click', scheduleTrack);
 
   const focusOn = localStorage.getItem(FOCUS_KEY) === '1';
   const typewriterOn = localStorage.getItem(TYPEWRITER_KEY) === '1';

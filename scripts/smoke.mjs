@@ -294,21 +294,26 @@ console.log('\n[8] View modes');
 $('#focus-toggle').click();
 assert(document.body.classList.contains('focus-mode'), 'focus mode class toggled on');
 assert(localStorage.getItem('typora-clone:focus') === '1', 'focus state persisted');
-// Put the caret in the first paragraph, then fire selectionchange.
-const para = pm().querySelector('p');
-const textNode = para.firstChild;
-const sel = document.getSelection();
-sel.removeAllRanges();
-const r = document.createRange();
-r.setStart(textNode, 0);
-r.collapse(true);
-sel.addRange(r);
-document.dispatchEvent(new Event('selectionchange'));
-await waitFor(() => pm().querySelector('.focus-active') === para, 'active block marked .focus-active');
-assert(para.className.includes('focus-active'), 'paragraph marked as focus-active');
+// Move the caret into the first paragraph via a real ProseMirror transaction;
+// the focusActivePlugin decoration should mark that block .focus-active.
+// Note: use the bundle's own view + Selection classes (imported copies would
+// be different module instances).
+const view = window.__editor.getView();
+let paraPos = 0;
+view.state.doc.forEach((node, offset) => {
+  if (!paraPos && node.type.name === 'paragraph') paraPos = offset + 1;
+});
+assert(paraPos > 0, 'found a paragraph position in the doc');
+const Selection = view.state.selection.constructor;
+view.dispatch(view.state.tr.setSelection(Selection.near(view.state.doc.resolve(paraPos))));
+await waitFor(() => pm().querySelector('.focus-active') !== null, 'active block marked .focus-active');
+assert(
+  pm().querySelector('.focus-active')?.textContent.includes('WYSIWYG'),
+  'paragraph marked as focus-active via decoration',
+);
 $('#focus-toggle').click();
 assert(!document.body.classList.contains('focus-mode'), 'focus mode toggled off');
-assert(pm().querySelector('.focus-active') === null, 'focus-active cleared');
+await waitFor(() => pm().querySelector('.focus-active') === null, 'focus-active cleared');
 
 $('#typewriter-toggle').click();
 assert(document.body.classList.contains('typewriter-mode'), 'typewriter mode toggled on');
