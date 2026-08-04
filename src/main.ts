@@ -1,10 +1,15 @@
 import './style.css';
 import { ready, refreshStats } from './editor';
+import { isTauri } from './tauri-bridge';
 import { initSidebar } from './sidebar';
 import { initExport } from './export';
 import { initFiles } from './files';
 import { initFormat } from './format';
 import { initViewModes } from './viewmodes';
+
+// Tauri shell: real macOS traffic lights float over the overlay titlebar —
+// style.css hides the fake dots and insets the titlebar under this class.
+if (isTauri()) document.body.classList.add('tauri');
 
 // ---- themes ----
 // import.meta.glob picks up every src/themes/*.css at build time.

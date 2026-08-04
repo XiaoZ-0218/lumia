@@ -1,6 +1,7 @@
 // Files: open/save single .md + autosave/restore (Typora-style).
 
 import { onUpdate, ready } from './editor';
+import { isTauri, openMarkdownFile, saveMarkdownFile, writeText } from './tauri-bridge';
 
 // lib.dom ships FileSystemFileHandle but not the picker methods — declare them.
 type FilePickerAcceptType = { description?: string; accept: Record<string, string[]> };
@@ -29,14 +30,21 @@ function setDocTitle(name: string): void {
   document.title = name;
 }
 
+/** Last path segment of a Tauri absolute path. */
+function baseName(path: string): string {
+  const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  return i === -1 ? path : path.slice(i + 1);
+}
+
 /** Current file name, from the shared handle (the sidebar sets it too). */
 function currentName(): string | null {
-  const handle = (window as any).__currentFileHandle as FileSystemFileHandle | undefined;
-  return handle ? handle.name : fallbackName;
+  const handle = (window as any).__currentFileHandle as FileSystemFileHandle | string | undefined;
+  if (!handle) return fallbackName;
+  return typeof handle === 'string' ? baseName(handle) : handle.name;
 }
 
 // ---- open ----
-async function applyOpened(text: string, name: string, handle: FileSystemFileHandle | null): Promise<void> {
+async function applyOpened(text: string, name: string, handle: FileSystemFileHandle | string | null): Promise<void> {
   await window.__editor.setMarkdown(text); // editor.ts renders the heading — re-set below
   (window as any).__currentFileHandle = handle;
   fallbackName = handle ? null : name;
@@ -44,6 +52,11 @@ async function applyOpened(text: string, name: string, handle: FileSystemFileHan
 }
 
 async function openFile(): Promise<void> {
+  if (isTauri()) {
+    const file = await openMarkdownFile();
+    if (file) await applyOpened(file.text, file.name, file.path);
+    return;
+  }
   if (typeof window.showOpenFilePicker !== 'function') return fileInput.click();
   try {
     const [handle] = await window.showOpenFilePicker({ types: [MD_TYPES] });
@@ -82,14 +95,31 @@ async function writeHandle(handle: FileSystemFileHandle, text: string): Promise<
 
 async function saveFile(): Promise<void> {
   const text = await window.__editor.getMarkdown();
-  const existing = (window as any).__currentFileHandle as FileSystemFileHandle | undefined;
+  const existing = (window as any).__currentFileHandle as FileSystemFileHandle | string | undefined;
   if (existing) {
     try {
-      await writeHandle(existing, text);
+      if (typeof existing === 'string') {
+        await writeText(existing, text); // tauri: write to the remembered path
+      } else {
+        await writeHandle(existing, text);
+      }
       return;
     } catch (err) {
       console.error('save failed, retrying as Save As:', err);
     }
+  }
+  if (isTauri()) {
+    const path = await saveMarkdownFile(suggestedName());
+    if (!path) return; // cancelled
+    try {
+      await writeText(path, text);
+    } catch (err) {
+      console.error('save failed:', err);
+      return;
+    }
+    (window as any).__currentFileHandle = path;
+    setDocTitle(baseName(path));
+    return;
   }
   if (typeof window.showSaveFilePicker !== 'function') return download(text);
   try {

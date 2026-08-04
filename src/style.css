@@ -59,6 +59,11 @@ body {
 .dot.yellow { background: #febc2e; }
 .dot.green { background: #28c840; }
 
+/* Tauri shell: the real macOS traffic lights float over the overlay titlebar,
+   so hide the fake dots and keep the title clear of the native buttons. */
+body.tauri .traffic-lights { visibility: hidden; }
+body.tauri .titlebar { padding-left: 78px; }
+
 .doc-title {
   position: absolute;
   left: 50%;

@@ -1,6 +1,8 @@
 // Sidebar: Typora-style Files | Outline tabs, folder file tree, and doc outline.
 import './sidebar.css';
 import { onUpdate, ready } from './editor';
+import { isTauri, pickDirectory, readDirRecursive, readText } from './tauri-bridge';
+import type { TreeEntry as BridgeTreeEntry } from './tauri-bridge';
 
 // ---- minimal File System Access API types (missing from older DOM libs) ----
 interface FSAFileHandle {
@@ -22,7 +24,7 @@ declare global {
 const MD_RE = /\.(md|markdown|txt)$/i;
 
 type DirNode = { kind: 'dir'; name: string; path: string; children: TreeNode[] };
-type FileNode = { kind: 'file'; name: string; path: string; handle: FSAFileHandle };
+type FileNode = { kind: 'file'; name: string; path: string; handle?: FSAFileHandle };
 type TreeNode = DirNode | FileNode;
 
 // ---- tabs: restructure .sidebar into a Files | Outline tab bar ----
@@ -116,18 +118,32 @@ function renderTree(container: HTMLUListElement, nodes: TreeNode[]): void {
 
 async function openFile(node: FileNode, li: HTMLElement): Promise<void> {
   await ready;
-  const text = await (await node.handle.getFile()).text();
+  const text = node.handle ? await (await node.handle.getFile()).text() : await readText(node.path);
   await window.__editor.setMarkdown(text);
-  (window as any).__currentFileHandle = node.handle;
+  (window as any).__currentFileHandle = node.handle ?? node.path;
   document.querySelectorAll('#file-tree li.active').forEach((el) => el.classList.remove('active'));
   li.classList.add('active');
 }
 
+/** Adapt a bridge tree entry (Tauri) to the sidebar's node shape. */
+function fromBridge(node: BridgeTreeEntry): TreeNode {
+  return node.kind === 'dir'
+    ? { kind: 'dir', name: node.name, path: node.path, children: node.children.map(fromBridge) }
+    : { kind: 'file', name: node.name, path: node.path };
+}
+
 async function pickFolder(): Promise<void> {
-  const pick = window.showDirectoryPicker;
-  if (!pick) return;
-  const root = await pick({ mode: 'read' });
-  const nodes = await scanDir(root, root.name);
+  let nodes: TreeNode[];
+  if (isTauri()) {
+    const root = await pickDirectory();
+    if (!root) return;
+    nodes = (await readDirRecursive(root)).map(fromBridge);
+  } else {
+    const pick = window.showDirectoryPicker;
+    if (!pick) return;
+    const root = await pick({ mode: 'read' });
+    nodes = await scanDir(root, root.name);
+  }
   const tree = document.getElementById('file-tree') as HTMLUListElement | null;
   if (!tree) return;
   tree.textContent = '';
@@ -144,7 +160,7 @@ async function pickFolder(): Promise<void> {
 function wireOpenFolder(): void {
   const btn = document.getElementById('open-folder') as HTMLButtonElement;
   if (!btn) return;
-  if (typeof window.showDirectoryPicker !== 'function') {
+  if (!isTauri() && typeof window.showDirectoryPicker !== 'function') {
     btn.disabled = true;
     btn.title = 'Open folder — requires Chrome/Edge';
     return;
