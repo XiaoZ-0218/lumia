@@ -21,7 +21,10 @@ concurrency:
 
 jobs:
   fix:
-    if: github.event.label.name == 'ai-fix'
+    # Only run when the repo owner applies the label — labels from anyone else
+    # are ignored (on public repos, only collaborators can label, but this pins
+    # it down to the owner explicitly).
+    if: github.event.label.name == 'ai-fix' && github.event.sender.login == 'XiaoZ-0218'
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
