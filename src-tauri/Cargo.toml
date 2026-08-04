@@ -1,0 +1,22 @@
+[package]
+name = "typora-clone"
+version = "0.1.0"
+description = "A Typora-clone desktop app built with Tauri v2"
+edition = "2021"
+rust-version = "1.90"
+
+# The lib target is required by Tauri v2 (staticlib/cdylib for mobile, rlib for desktop).
+# src/main.rs is auto-detected as the binary, so the packaged binary is "typora-clone".
+[lib]
+name = "typora_clone_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
