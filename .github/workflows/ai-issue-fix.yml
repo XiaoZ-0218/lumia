@@ -1,12 +1,12 @@
 name: AI Issue Fix
 
 # Triggers when the repo owner labels an issue:
-#   ai-fix:kimi     -> fix with Kimi (kimi-for-coding, secret KIMI_API_KEY)
+#   ai-fix:kimi     -> fix with Kimi (k3-256k, secret KIMI_API_KEY)
 #   ai-fix:deepseek -> fix with DeepSeek (deepseek-v4-flash, secret DEEPSEEK_API_KEY)
 #
 # Kimi Code CLI reads the issue, fixes the bug on a branch, runs the build +
-# smoke test, opens a PR, and enables auto-merge so it lands once CI is green.
-# Progress is reported back as issue comments (started / failed / PR opened).
+# smoke test, opens a PR, waits for its CI to go green, and merges it.
+# Progress is reported back as issue comments (started / failed / PR merged).
 
 on:
   issues:
@@ -111,7 +111,7 @@ jobs:
           gh issue comment "${ISSUE_NUMBER}" \
             --body "🤖 AI fix attempt made no changes — the agent could not produce a fix automatically. Please investigate manually."
 
-      - name: Commit, push, open PR with auto-merge
+      - name: Commit, push, open PR, wait for CI, merge
         if: steps.changes.outputs.has_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
@@ -129,9 +129,19 @@ jobs:
 
           Closes #${ISSUE_NUMBER}" \
             --base main --head "${BRANCH}")
-          gh pr merge "${PR_URL}" --auto --squash
           gh issue comment "${ISSUE_NUMBER}" \
-            --body "✅ 已提交修复：${PR_URL}（模型 \`${KIMI_MODEL_NAME}\`）。CI 通过后将自动合并。"
+            --body "🔀 已提交修复 PR：${PR_URL}（模型 \`${KIMI_MODEL_NAME}\`），等待 CI 通过后自动合并。"
+          # Auto-merge is unavailable on private repos without a paid plan, so
+          # wait for the PR checks here and merge directly.
+          if gh pr checks "${PR_URL}" --watch --interval 30; then
+            gh pr merge "${PR_URL}" --squash --delete-branch
+            gh issue comment "${ISSUE_NUMBER}" \
+              --body "✅ CI 通过，${PR_URL} 已自动合并。"
+          else
+            gh issue comment "${ISSUE_NUMBER}" \
+              --body "❌ PR 的 CI 未通过：${PR_URL}，请人工检查。"
+            exit 1
+          fi
 
       - name: Comment on failure
         if: failure()
