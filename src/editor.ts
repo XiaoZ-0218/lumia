@@ -1,4 +1,5 @@
 import { Editor, editorViewCtx, parserCtx, rootCtx, serializerCtx } from '@milkdown/core';
+import type { Ctx } from '@milkdown/ctx';
 import { history } from '@milkdown/plugin-history';
 import { listener, listenerCtx } from '@milkdown/plugin-listener';
 import { commonmark } from '@milkdown/preset-commonmark';
@@ -52,6 +53,21 @@ console.log(greeting);
 export interface EditorAPI {
   getMarkdown(): Promise<string>;
   setMarkdown(md: string): Promise<void>;
+  /** Run an arbitrary action against the Milkdown ctx (e.g. callCommand). */
+  call<T>(fn: (ctx: Ctx) => T): T;
+}
+
+type UpdateHandler = (markdown: string) => void;
+const updateHandlers: UpdateHandler[] = [];
+
+/** Subscribe to document changes (debounced by the listener plugin). */
+export function onUpdate(fn: UpdateHandler): void {
+  updateHandlers.push(fn);
+}
+
+async function notifyUpdate(): Promise<void> {
+  const md = await window.__editor.getMarkdown();
+  for (const fn of updateHandlers) fn(md);
 }
 
 declare global {
@@ -103,6 +119,7 @@ async function boot(): Promise<void> {
       ctx.get(listenerCtx).updated((_ctx, doc) => {
         renderStats(doc.textBetween(0, doc.content.size, '\n'));
         renderTitle(titleFromDoc(doc));
+        void notifyUpdate();
       });
     })
     .use(commonmark)
@@ -127,7 +144,7 @@ async function boot(): Promise<void> {
     });
   };
 
-  window.__editor = { getMarkdown, setMarkdown };
+  window.__editor = { getMarkdown, setMarkdown, call: (fn) => editor.action(fn) };
 
   await setMarkdown(WELCOME);
   refreshStats(WELCOME);

@@ -1,5 +1,10 @@
 import './style.css';
 import { ready, refreshStats } from './editor';
+import { initSidebar } from './sidebar';
+import { initExport } from './export';
+import { initFiles } from './files';
+import { initFormat } from './format';
+import { initViewModes } from './viewmodes';
 
 // ---- themes ----
 // import.meta.glob picks up every src/themes/*.css at build time.
@@ -105,3 +110,10 @@ document.addEventListener('keydown', (e) => {
     applyZoom();
   }
 });
+
+// ---- feature modules ----
+initSidebar();
+initExport();
+initFiles();
+initFormat();
+initViewModes();

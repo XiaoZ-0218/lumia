@@ -14,6 +14,11 @@
       </div>
       <span class="doc-title" id="doc-title">Untitled</span>
       <div class="titlebar-right">
+        <button class="titlebar-btn" id="open-folder" title="Open folder" aria-label="Open folder">📂</button>
+        <button class="titlebar-btn" id="open-file" title="Open file (⌘O)" aria-label="Open file">Open</button>
+        <button class="titlebar-btn" id="save-file" title="Save file (⌘S)" aria-label="Save file">Save</button>
+        <button class="titlebar-btn" id="export-html" title="Export as HTML" aria-label="Export as HTML">HTML</button>
+        <button class="titlebar-btn" id="export-pdf" title="Print / export PDF (⌘P)" aria-label="Export as PDF">PDF</button>
         <button class="titlebar-btn" id="sidebar-toggle" title="Toggle sidebar" aria-label="Toggle sidebar">☰</button>
       </div>
     </header>
@@ -48,6 +53,8 @@
     <footer class="statusbar">
       <span id="word-count">0 words · 0 chars</span>
       <div class="statusbar-right">
+        <button class="statusbar-btn" id="focus-toggle" title="Toggle focus mode (F8)">Focus</button>
+        <button class="statusbar-btn" id="typewriter-toggle" title="Toggle typewriter mode">Typewriter</button>
         <select id="theme-select" title="Theme" aria-label="Theme"></select>
         <button class="statusbar-btn" id="zoom-out" title="Zoom out (⌘-)" aria-label="Zoom out">−</button>
         <button class="statusbar-btn" id="zoom-in" title="Zoom in (⌘+)" aria-label="Zoom in">+</button>
