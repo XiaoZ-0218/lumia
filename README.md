@@ -99,7 +99,7 @@ CI (`.github/workflows/ci.yml`) runs `npm ci && npm test` on every push / pull r
 
 ## Contributing
 
-Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs, propose features, and submit pull requests.
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for how to report bugs, propose features, and submit pull requests. Please also read our [Code of Conduct](CODE_OF_CONDUCT.md); security issues should be reported privately as described in the [Security Policy](SECURITY.md).
 
 ## License
 

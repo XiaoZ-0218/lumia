@@ -99,7 +99,7 @@ CI（`.github/workflows/ci.yml`）在每次 push / PR 时运行 `npm ci && npm t
 
 ## 贡献
 
-欢迎贡献 —— 如何报告 bug、提出功能建议、提交 pull request，请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。
+欢迎贡献 —— 如何报告 bug、提出功能建议、提交 pull request，请参阅 [CONTRIBUTING.md](CONTRIBUTING.md)。参与社区请遵守[行为准则](CODE_OF_CONDUCT.md)；安全问题请按照[安全政策](SECURITY.md)中的方式私下报告。
 
 ## 许可证
 
