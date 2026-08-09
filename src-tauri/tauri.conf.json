@@ -3,7 +3,7 @@
   "productName": "Lumia",
   "mainBinaryName": "lumia",
   "version": "0.1.0",
-  "identifier": "com.lumia.app",
+  "identifier": "com.github.xiaoz0218.lumia",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:5173",
