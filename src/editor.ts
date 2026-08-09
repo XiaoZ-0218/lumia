@@ -207,6 +207,83 @@ function createTaskItemNodeView(
   return new TaskItemView(node, view, getPos);
 }
 
+const DANGEROUS_HTML_TAGS = ['script', 'iframe', 'object', 'embed', 'link', 'meta', 'base'];
+const DANGEROUS_URL_RE = /^\s*(javascript|vbscript):/i;
+
+/**
+ * Parse raw HTML and strip dangerous tags/attributes.
+ *
+ * - Removes script, iframe, object, embed, link, meta and base elements.
+ * - Strips every attribute starting with "on" (event handlers).
+ * - Strips href/src values that start with javascript: or vbscript:.
+ */
+function sanitizeHtml(raw: string): string {
+  const doc = new DOMParser().parseFromString(raw, 'text/html');
+  const body = doc.body;
+
+  body.querySelectorAll(DANGEROUS_HTML_TAGS.join(',')).forEach((el) => el.remove());
+
+  const walker = doc.createTreeWalker(body, NodeFilter.SHOW_ELEMENT);
+  while (walker.nextNode()) {
+    const el = walker.currentNode as Element;
+    Array.from(el.attributes).forEach((attr) => {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+        return;
+      }
+      if ((name === 'href' || name === 'src') && DANGEROUS_URL_RE.test(attr.value)) {
+        el.removeAttribute(attr.name);
+      }
+    });
+  }
+
+  return body.innerHTML;
+}
+
+/**
+ * Node view for Milkdown's inline `html` atom.
+ *
+ * The default toDOM renders the raw HTML string as textContent inside a span,
+ * so the HTML is visible literally. We render the sanitized HTML as real DOM
+ * elements while keeping the wrapper's data-type/data-value attributes so
+ * copy/paste round-trips through the preset's parseDOM rule.
+ */
+class HtmlView implements NodeView {
+  dom: HTMLElement;
+
+  constructor(node: Node) {
+    const span = document.createElement('span');
+    span.className = 'html-raw';
+    span.dataset.type = 'html';
+    span.contentEditable = 'false';
+    this.render(node, span);
+    this.dom = span;
+  }
+
+  private render(node: Node, dom: HTMLElement): void {
+    const value = String(node.attrs.value ?? '');
+    dom.dataset.value = value;
+    dom.innerHTML = sanitizeHtml(value);
+  }
+
+  update(node: Node): boolean {
+    if (node.type.name !== 'html') return false;
+    const value = String(node.attrs.value ?? '');
+    if (this.dom.dataset.value === value) return true;
+    this.render(node, this.dom);
+    return true;
+  }
+}
+
+function createHtmlNodeView(
+  node: Node,
+  _view: EditorView,
+  _getPos: () => number | undefined,
+): NodeView {
+  return new HtmlView(node);
+}
+
 async function boot(): Promise<void> {
   const editor = await Editor.make()
     .config((ctx) => {
@@ -216,6 +293,7 @@ async function boot(): Promise<void> {
         nodeViews: {
           ...options.nodeViews,
           list_item: createTaskItemNodeView,
+          html: createHtmlNodeView,
         },
       }));
       ctx.get(listenerCtx).updated((_ctx, doc) => {

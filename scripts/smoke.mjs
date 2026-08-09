@@ -78,6 +78,7 @@ const globalsToCopy = [
   'HTMLTextAreaElement', 'HTMLLinkElement', 'HTMLUListElement', 'HTMLLIElement',
   'Node', 'Text', 'DocumentFragment', 'Document', 'Comment', 'Range', 'DOMRect',
   'MutationObserver', 'Event', 'KeyboardEvent', 'MouseEvent', 'CustomEvent',
+  'DOMParser', 'NodeFilter',
   'File', 'FormData', 'Headers', 'XMLHttpRequest', 'addEventListener',
   'removeEventListener', 'dispatchEvent',
 ];
@@ -190,6 +191,46 @@ assert(/^[-*] \[ \] WYSIWYG editing$/m.test(toggledMd), 'checkbox change toggles
 await editor.setMarkdown(welcomeMd);
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'outline restored after task toggle');
+
+// ---- 1c. Raw HTML rendering (node view + sanitizer + round-trip) ------------
+console.log('\n[1c] Raw HTML rendering');
+await editor.setMarkdown('<p align="center"><a href="https://example.com"><img src="https://example.com/x.png" alt="x"></a></p>\n\nplain text');
+await tick(50);
+const htmlRaw = $('#editor span.html-raw[data-type="html"]');
+assert(htmlRaw !== null, 'raw html node renders as span.html-raw[data-type="html"]');
+assert(htmlRaw.querySelector('img') !== null, 'raw html node contains a real <img> element');
+assert(
+  htmlRaw.querySelector('a[href="https://example.com"]') !== null,
+  'raw html node contains a real <a href="..."> element',
+);
+assert(
+  htmlRaw.dataset.value === '<p align="center"><a href="https://example.com"><img src="https://example.com/x.png" alt="x"></a></p>',
+  'data-value holds the raw html string for round-trip',
+);
+
+// Sanitizer: dangerous tags/attributes are stripped inside the rendered DOM.
+await editor.setMarkdown('<script>alert(1)</script>\n\n<img src="x" onerror="alert(1)">\n\n<a href="javascript:alert(1)">x</a>');
+await tick(50);
+const rawSpans = $$('#editor span.html-raw[data-type="html"]');
+// 4 nodes: script block, img block, and the <a> tag split into open/close inline html nodes.
+assert(rawSpans.length === 4, `sanitizer case produces 4 html nodes (got ${rawSpans.length})`);
+assert(rawSpans.every((s) => s.querySelector('script') === null), 'script element removed by sanitizer');
+assert(rawSpans.some((s) => s.querySelector('img') !== null), 'img element still rendered');
+assert(rawSpans.every((s) => s.querySelector('img[onerror]') === null), 'img onerror attribute stripped by sanitizer');
+assert(rawSpans.some((s) => s.querySelector('a') !== null), 'link element still rendered');
+assert(
+  rawSpans.every((s) => s.querySelector('a[href^="javascript:"]') === null),
+  'javascript: href stripped by sanitizer',
+);
+
+// Markdown round-trip: the html node serializes back to raw markup.
+const rawRoundMd = await editor.getMarkdown();
+assert(rawRoundMd.includes('<img'), 'getMarkdown still contains raw <img> markup after round-trip');
+
+// Restore the welcome doc so later sections keep their known state.
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'outline restored after raw html tests');
 
 // ---- 2. all feature modules init without throwing ---------------------------
 console.log('\n[2] Feature module init (sidebar / export / files / format / viewmodes)');

@@ -8,6 +8,7 @@ English | [中文](README_CN.md)
 
 - **WYSIWYG editing**: built on Milkdown / ProseMirror with CommonMark + GFM (tables, task lists, strikethrough)
 - **Source mode**: toggle between WYSIWYG and raw markdown (`⌘/`)
+- **Raw HTML rendering**: inline and block HTML in markdown renders in place in the WYSIWYG view (sanitized — scripts and event handlers are stripped); edit the original HTML in source mode (`⌘/`)
 - **File management**: open / save `.md` files (`⌘O` / `⌘S`) via the File System Access API or native Tauri dialogs, with automatic fallbacks (file input / download) elsewhere
 - **Sidebar**: Files and Outline tabs — browse a folder's file tree, jump to headings from the outline
 - **Export**: standalone HTML download with the active theme embedded, or print / export PDF (`⌘P`)
