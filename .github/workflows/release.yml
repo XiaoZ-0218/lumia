@@ -28,9 +28,14 @@ jobs:
 
       # Builds the desktop bundle and publishes a GitHub Release for the tag,
       # uploading the .dmg / .app bundles as release assets.
+      # tauri-action only uploads when tagName is passed explicitly (it does not
+      # fall back to GITHUB_REF); releaseName is required to create the release.
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
+          tagName: ${{ github.ref_name }}
+          releaseName: Lumia ${{ github.ref_name }}
           releaseDraft: false
           prerelease: false
+          generateReleaseNotes: true
