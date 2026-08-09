@@ -47,6 +47,8 @@ npm test           # install jsdom, build, and run the scripts/smoke.mjs smoke t
 
 CI (`.github/workflows/ci.yml`) runs `npm ci && npm test` on every push / pull request.
 
+CD (`.github/workflows/release.yml`): pushing a `v*` tag (e.g. `git tag v0.1.0 && git push origin v0.1.0`) re-runs the test suite, builds the macOS desktop bundle with `tauri-action`, and publishes a GitHub Release with the `.dmg` / `.app` assets.
+
 ## Keyboard Shortcuts
 
 `⌘` maps to `Ctrl` on Windows / Linux.

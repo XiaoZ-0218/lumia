@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Gate: same build + smoke test as CI before anything is released.
+      - run: npm test
+
+      - uses: swatinem/rust-cache@v2
+
+      # Builds the desktop bundle and publishes a GitHub Release for the tag,
+      # uploading the .dmg / .app bundles as release assets.
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          releaseDraft: false
+          prerelease: false

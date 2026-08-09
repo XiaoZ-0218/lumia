@@ -47,6 +47,8 @@ npm test           # 安装 jsdom、构建并运行 scripts/smoke.mjs 冒烟测�
 
 CI（`.github/workflows/ci.yml`）在每次 push / PR 时运行 `npm ci && npm test`。
 
+CD（`.github/workflows/release.yml`）：推送 `v*` 标签（如 `git tag v0.1.0 && git push origin v0.1.0`）会先跑一遍测试，再用 `tauri-action` 打包 macOS 桌面应用，并自动发布带 `.dmg` / `.app` 附件的 GitHub Release。
+
 ## 快捷键
 
 `⌘` 在 Windows / Linux 上对应 `Ctrl`。
