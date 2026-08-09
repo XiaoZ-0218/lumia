@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-08-09
+## [0.1.0] - 2026-08-10
 
 Initial release.
 
@@ -25,6 +25,10 @@ Initial release.
 - **Raw HTML rendering**: inline and block HTML in markdown renders in place, sanitized (scripts, event handlers, and `javascript:` URLs stripped); editable via source mode
 - **Task list checkboxes**: clickable checkboxes for GFM task list items
 - **Desktop shell**: Tauri v2 app for macOS (overlay titlebar, native file dialogs and file I/O)
+
+### Changed
+
+- Bundle identifier is now `com.github.xiaoz0218.lumia` (was `com.lumia.app`, whose `.app` suffix conflicts with the macOS application bundle extension)
 
 ### Documentation
 
