@@ -14,8 +14,13 @@
       </div>
       <span class="doc-title" id="doc-title">Untitled</span>
       <div class="titlebar-right">
-        <button class="titlebar-btn" id="open-folder" title="Open folder" aria-label="Open folder">📂</button>
-        <button class="titlebar-btn" id="open-file" title="Open file (⌘O)" aria-label="Open file">Open</button>
+        <div class="open-menu-wrap">
+          <button class="titlebar-btn" id="open-menu" title="Open" aria-label="Open" aria-haspopup="true" aria-expanded="false">Open ▾</button>
+          <div class="open-dropdown" id="open-dropdown" hidden>
+            <button class="titlebar-dropdown-item" id="open-file" title="Open file (⌘O)" aria-label="Open file">Open file</button>
+            <button class="titlebar-dropdown-item" id="open-folder" title="Open folder" aria-label="Open folder">Open folder</button>
+          </div>
+        </div>
         <button class="titlebar-btn" id="save-file" title="Save file (⌘S)" aria-label="Save file">Save</button>
         <button class="titlebar-btn" id="export-html" title="Export as HTML" aria-label="Export as HTML">HTML</button>
         <button class="titlebar-btn" id="export-pdf" title="Print / export PDF (⌘P)" aria-label="Export as PDF">PDF</button>
@@ -26,6 +31,10 @@
     <aside class="sidebar">
       <section class="sidebar-section">
         <h2>Files</h2>
+        <div class="files-header" id="files-header">
+          <button class="up-dir" id="up-dir" title="Open parent folder" aria-label="Open parent folder">..</button>
+          <span class="root-name" id="root-name">No folder</span>
+        </div>
         <ul id="file-tree">
           <li>welcome.md</li>
           <li>README.md</li>

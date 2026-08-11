@@ -1,7 +1,7 @@
 // Sidebar: Typora-style Files | Outline tabs, folder file tree, and doc outline.
 import './sidebar.css';
 import { onUpdate, ready } from './editor';
-import { isTauri, pickDirectory, readDirRecursive, readText } from './tauri-bridge';
+import { isTauri, parentDir, pickDirectory, readDirShallow, readText } from './tauri-bridge';
 import type { TreeEntry as BridgeTreeEntry } from './tauri-bridge';
 
 // ---- minimal File System Access API types (missing from older DOM libs) ----
@@ -22,10 +22,21 @@ declare global {
 }
 
 const MD_RE = /\.(md|markdown|txt)$/i;
+const SKIP_RE = /^\.|^node_modules$/;
 
-type DirNode = { kind: 'dir'; name: string; path: string; children: TreeNode[] };
+type DirNode = {
+  kind: 'dir';
+  name: string;
+  path: string;
+  handle?: FSADirHandle;
+  children: TreeNode[] | null;
+};
 type FileNode = { kind: 'file'; name: string; path: string; handle?: FSAFileHandle };
 type TreeNode = DirNode | FileNode;
+
+type Root = { kind: 'tauri'; path: string } | { kind: 'fsa'; handle: FSADirHandle };
+
+let currentRoot: Root | null = null;
 
 // ---- tabs: restructure .sidebar into a Files | Outline tab bar ----
 function buildTabs(): void {
@@ -64,18 +75,14 @@ function buildTabs(): void {
   activate('files');
 }
 
-// ---- file tree ----
-async function scanDir(dir: FSADirHandle, path: string): Promise<TreeNode[]> {
+// ---- file tree: one-level loads with cached children ----
+async function scanDirShallowFSA(dir: FSADirHandle, path: string): Promise<TreeNode[]> {
   const dirs: DirNode[] = [];
   const files: FileNode[] = [];
   for await (const [name, handle] of dir.entries()) {
+    if (SKIP_RE.test(name)) continue;
     if (handle.kind === 'directory') {
-      dirs.push({
-        kind: 'dir',
-        name,
-        path: `${path}/${name}`,
-        children: await scanDir(handle, `${path}/${name}`),
-      });
+      dirs.push({ kind: 'dir', name, path: `${path}/${name}`, handle, children: null });
     } else if (MD_RE.test(name)) {
       files.push({ kind: 'file', name, path: `${path}/${name}`, handle });
     }
@@ -84,32 +91,83 @@ async function scanDir(dir: FSADirHandle, path: string): Promise<TreeNode[]> {
   return [...dirs.sort(byName), ...files.sort(byName)];
 }
 
+/** Adapt a bridge tree entry (Tauri, one level) to the sidebar's node shape. */
+function fromBridgeShallow(entry: BridgeTreeEntry): TreeNode {
+  return entry.kind === 'dir'
+    ? { kind: 'dir', name: entry.name, path: entry.path, children: null }
+    : { kind: 'file', name: entry.name, path: entry.path };
+}
+
+async function scanDirShallowTauri(path: string): Promise<TreeNode[]> {
+  const entries = await readDirShallow(path);
+  return entries.map(fromBridgeShallow);
+}
+
+async function loadChildren(node: DirNode): Promise<TreeNode[]> {
+  if (node.children !== null) return node.children;
+  if (!currentRoot) return [];
+  try {
+    node.children =
+      currentRoot.kind === 'tauri'
+        ? await scanDirShallowTauri(node.path)
+        : await scanDirShallowFSA(node.handle!, node.path);
+  } catch (err) {
+    // Tolerate unreadable subfolders: keep the tree usable even if one branch fails.
+    console.error('failed to read folder:', err);
+    node.children = [];
+  }
+  return node.children;
+}
+
+function renderDirNode(node: DirNode, li: HTMLLIElement): void {
+  li.textContent = '';
+  li.className = 'tree-dir';
+  const caret = document.createElement('span');
+  caret.className = 'tree-caret';
+  caret.textContent = '▸';
+  const label = document.createElement('span');
+  label.className = 'tree-label';
+  label.textContent = node.name;
+  const children = document.createElement('ul');
+  children.className = 'tree-children';
+  children.hidden = true;
+  li.append(caret, label, children);
+
+  const toggle = async (): Promise<void> => {
+    const opening = !li.classList.contains('open');
+    if (opening && node.children === null) {
+      const loaded = await loadChildren(node);
+      renderTree(children, loaded);
+    }
+    const open = li.classList.toggle('open');
+    children.hidden = !open;
+    caret.textContent = open ? '▾' : '▸';
+  };
+  caret.addEventListener('click', (e) => {
+    e.stopPropagation();
+    void toggle();
+  });
+  label.addEventListener('click', () => void toggle());
+}
+
 function renderTree(container: HTMLUListElement, nodes: TreeNode[]): void {
+  container.textContent = '';
+  if (nodes.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'tree-empty';
+    empty.textContent = 'Empty folder';
+    container.appendChild(empty);
+    return;
+  }
   for (const node of nodes) {
     const li = document.createElement('li');
     if (node.kind === 'dir') {
-      li.className = 'tree-dir open';
-      const caret = document.createElement('span');
-      caret.className = 'tree-caret';
-      caret.textContent = '▾';
-      const label = document.createElement('span');
-      label.className = 'tree-label';
-      label.textContent = node.name;
-      const children = document.createElement('ul');
-      children.className = 'tree-children';
-      renderTree(children, node.children);
-      li.append(caret, label, children);
-      const toggle = (): void => {
-        const open = li.classList.toggle('open');
-        children.hidden = !open;
-        caret.textContent = open ? '▾' : '▸';
-      };
-      caret.addEventListener('click', toggle);
-      label.addEventListener('click', toggle);
+      renderDirNode(node, li);
     } else {
       li.className = 'tree-file';
       li.textContent = node.name;
       li.title = node.path;
+      li.dataset.path = node.path;
       li.addEventListener('click', () => void openFile(node, li));
     }
     container.appendChild(li);
@@ -125,40 +183,96 @@ async function openFile(node: FileNode, li: HTMLElement): Promise<void> {
   li.classList.add('active');
 }
 
-/** Adapt a bridge tree entry (Tauri) to the sidebar's node shape. */
-function fromBridge(node: BridgeTreeEntry): TreeNode {
-  return node.kind === 'dir'
-    ? { kind: 'dir', name: node.name, path: node.path, children: node.children.map(fromBridge) }
-    : { kind: 'file', name: node.name, path: node.path };
+// ---- files header: current root + parent-folder button ----
+function updateFilesHeader(): void {
+  const upBtn = document.getElementById('up-dir') as HTMLButtonElement | null;
+  const rootName = document.getElementById('root-name') as HTMLSpanElement | null;
+  if (!upBtn || !rootName) return;
+
+  if (!currentRoot) {
+    rootName.textContent = 'No folder';
+    upBtn.disabled = true;
+    upBtn.title = 'Open a folder first';
+    return;
+  }
+
+  rootName.textContent = currentRoot.kind === 'tauri' ? currentRoot.path : currentRoot.handle.name;
+
+  if (currentRoot.kind === 'fsa') {
+    // FS Access API directory handles do not expose their parent directory, so
+    // upward navigation is impossible in the browser version.
+    upBtn.disabled = true;
+    upBtn.title = 'Parent navigation is unavailable in the browser';
+    return;
+  }
+
+  const parent = parentDir(currentRoot.path);
+  upBtn.disabled = parent === null;
+  upBtn.title = parent === null ? 'Already at filesystem root' : 'Open parent folder';
+}
+
+function wireUpDir(): void {
+  const upBtn = document.getElementById('up-dir') as HTMLButtonElement | null;
+  if (!upBtn) return;
+  upBtn.addEventListener('click', () => {
+    if (!currentRoot || currentRoot.kind !== 'tauri') return;
+    const parent = parentDir(currentRoot.path);
+    if (!parent) return;
+    void loadRootTauri(parent);
+  });
+}
+
+async function loadRootTauri(path: string): Promise<void> {
+  currentRoot = { kind: 'tauri', path };
+  updateFilesHeader();
+  const tree = document.getElementById('file-tree') as HTMLUListElement | null;
+  if (!tree) return;
+  try {
+    const nodes = await scanDirShallowTauri(path);
+    renderTree(tree, nodes);
+  } catch (err) {
+    console.error('failed to load folder:', err);
+    tree.textContent = '';
+    const li = document.createElement('li');
+    li.className = 'tree-empty';
+    li.textContent = 'Could not read folder';
+    tree.appendChild(li);
+  }
+}
+
+async function loadRootFSA(handle: FSADirHandle): Promise<void> {
+  currentRoot = { kind: 'fsa', handle };
+  updateFilesHeader();
+  const tree = document.getElementById('file-tree') as HTMLUListElement | null;
+  if (!tree) return;
+  try {
+    const nodes = await scanDirShallowFSA(handle, handle.name);
+    renderTree(tree, nodes);
+  } catch (err) {
+    console.error('failed to load folder:', err);
+    tree.textContent = '';
+    const li = document.createElement('li');
+    li.className = 'tree-empty';
+    li.textContent = 'Could not read folder';
+    tree.appendChild(li);
+  }
 }
 
 async function pickFolder(): Promise<void> {
-  let nodes: TreeNode[];
   if (isTauri()) {
     const root = await pickDirectory();
     if (!root) return;
-    nodes = (await readDirRecursive(root)).map(fromBridge);
+    await loadRootTauri(root);
   } else {
     const pick = window.showDirectoryPicker;
     if (!pick) return;
     const root = await pick({ mode: 'read' });
-    nodes = await scanDir(root, root.name);
+    await loadRootFSA(root);
   }
-  const tree = document.getElementById('file-tree') as HTMLUListElement | null;
-  if (!tree) return;
-  tree.textContent = '';
-  if (nodes.length === 0) {
-    const li = document.createElement('li');
-    li.className = 'tree-empty';
-    li.textContent = 'No markdown files found';
-    tree.appendChild(li);
-    return;
-  }
-  renderTree(tree, nodes);
 }
 
 function wireOpenFolder(): void {
-  const btn = document.getElementById('open-folder') as HTMLButtonElement;
+  const btn = document.getElementById('open-folder') as HTMLButtonElement | null;
   if (!btn) return;
   if (!isTauri() && typeof window.showDirectoryPicker !== 'function') {
     btn.disabled = true;
@@ -166,6 +280,21 @@ function wireOpenFolder(): void {
     return;
   }
   btn.addEventListener('click', () => void pickFolder());
+}
+
+/** Load a folder into the Files tree and highlight the named file as active. */
+export async function revealFile(dirPath: string, fileName: string): Promise<void> {
+  await loadRootTauri(dirPath);
+  const tree = document.getElementById('file-tree') as HTMLUListElement | null;
+  if (!tree) return;
+  const targetPath = `${dirPath}/${fileName}`;
+  for (const li of tree.querySelectorAll<HTMLLIElement>('li.tree-file')) {
+    if (li.dataset.path === targetPath) {
+      document.querySelectorAll('#file-tree li.active').forEach((el) => el.classList.remove('active'));
+      li.classList.add('active');
+      break;
+    }
+  }
 }
 
 // ---- outline ----
@@ -219,6 +348,8 @@ function updateActiveOutline(): void {
 export function initSidebar(): void {
   buildTabs();
   wireOpenFolder();
+  wireUpDir();
+  updateFilesHeader();
 
   const tree = document.getElementById('file-tree');
   if (tree) {

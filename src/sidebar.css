@@ -28,6 +28,46 @@
 .sidebar-panel[hidden] { display: none; }
 .sidebar-panel h2 { display: none; }
 
+/* ---- files header (current root + parent-folder button) ---- */
+.files-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.up-dir {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.up-dir:hover:not(:disabled) {
+  background: var(--border);
+  color: var(--fg);
+}
+
+.up-dir:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.root-name {
+  flex: 1;
+  font-size: 12px;
+  color: var(--fg);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* ---- file tree ---- */
 #file-tree li, .outline-item { cursor: pointer; }
 

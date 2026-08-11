@@ -99,6 +99,48 @@ body.tauri .titlebar { padding-left: 78px; }
   color: var(--fg);
 }
 
+.open-menu-wrap { position: relative; }
+
+.open-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+}
+
+.open-dropdown[hidden] { display: none; }
+
+.titlebar-dropdown-item {
+  border: none;
+  background: none;
+  color: var(--fg);
+  font-size: 13px;
+  line-height: 1;
+  text-align: left;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.titlebar-dropdown-item:hover:not(:disabled) {
+  background: var(--border);
+}
+
+.titlebar-dropdown-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* ---- sidebar ---- */
 
 .sidebar {
