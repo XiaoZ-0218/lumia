@@ -1,6 +1,7 @@
 // Files: open/save single .md + autosave/restore (Typora-style).
 
 import { onUpdate, ready } from './editor';
+import { revealFile } from './sidebar';
 import { isTauri, openMarkdownFile, saveMarkdownFile, writeText } from './tauri-bridge';
 
 // lib.dom ships FileSystemFileHandle but not the picker methods — declare them.
@@ -36,6 +37,12 @@ function baseName(path: string): string {
   return i === -1 ? path : path.slice(i + 1);
 }
 
+/** Directory portion of a Tauri absolute path. */
+function dirName(path: string): string {
+  const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  return i === -1 ? path : path.slice(0, i);
+}
+
 /** Current file name, from the shared handle (the sidebar sets it too). */
 function currentName(): string | null {
   const handle = (window as any).__currentFileHandle as FileSystemFileHandle | string | undefined;
@@ -54,7 +61,12 @@ async function applyOpened(text: string, name: string, handle: FileSystemFileHan
 async function openFile(): Promise<void> {
   if (isTauri()) {
     const file = await openMarkdownFile();
-    if (file) await applyOpened(file.text, file.name, file.path);
+    if (file) {
+      await applyOpened(file.text, file.name, file.path);
+      // Browser file handles cannot reveal their containing folder, but Tauri
+      // gives us a real path, so load the folder and highlight the file.
+      void revealFile(dirName(file.path), file.name);
+    }
     return;
   }
   if (typeof window.showOpenFilePicker !== 'function') return fileInput.click();
@@ -160,6 +172,33 @@ function scheduleDraftSave(md: string): void {
 export function initFiles(): void {
   document.getElementById('open-file')?.addEventListener('click', () => void openFile());
   document.getElementById('save-file')?.addEventListener('click', () => void saveFile());
+
+  // ---- open dropdown: merged Open file / Open folder menu ----
+  const openMenu = document.getElementById('open-menu') as HTMLButtonElement | null;
+  const openDropdown = document.getElementById('open-dropdown') as HTMLDivElement | null;
+  function setDropdownOpen(open: boolean): void {
+    if (!openDropdown || !openMenu) return;
+    openDropdown.hidden = !open;
+    openMenu.setAttribute('aria-expanded', String(open));
+  }
+  if (openMenu && openDropdown) {
+    openMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setDropdownOpen(Boolean(openDropdown.hidden));
+    });
+    openDropdown.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('click', () => setDropdownOpen(false));
+    });
+    document.addEventListener('click', (e) => {
+      if (!openDropdown.hidden && !openDropdown.contains(e.target as Node) && e.target !== openMenu) {
+        setDropdownOpen(false);
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !openDropdown.hidden) setDropdownOpen(false);
+    });
+  }
+
   document.addEventListener('keydown', (e) => {
     if (!(e.metaKey || e.ctrlKey)) return;
     const key = e.key.toLowerCase();
