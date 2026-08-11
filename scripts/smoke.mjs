@@ -238,12 +238,40 @@ assert($('.sidebar-tabs') !== null, 'sidebar tabs built');
 assert($$('.sidebar-tab').length === 2, 'two sidebar tabs exist');
 assert($('#file-tree .tree-empty')?.textContent.includes('Open a folder to browse'),
   'file tree shows the empty state (sidebar init ran)');
-assert($('#open-folder').disabled === true, 'open-folder disabled without showDirectoryPicker');
+assert($('#open-menu') !== null, '#open-menu button exists');
+assert($('#open-dropdown') !== null, '#open-dropdown exists');
+assert($('#open-dropdown').contains($('#open-folder')), '#open-folder lives inside the dropdown');
+assert($('#open-folder').disabled === true, '#open-folder disabled without showDirectoryPicker');
+assert($('#up-dir') !== null, '#up-dir button exists');
+assert($('#up-dir').disabled === true, '#up-dir disabled when no folder is open');
+assert($('#root-name') !== null, '#root-name label exists');
+assert($('#root-name').textContent === 'No folder', '#root-name shows empty state');
 assert($$('#theme-select option').length === 4, 'theme select populated with 4 themes');
 assert(document.body.classList.contains('theme-github'), 'default theme applied');
 assert($('#theme-link') !== null, 'theme stylesheet link injected');
 assert($$('.statusbar-btn').length >= 5, 'statusbar controls present');
 assert(window.localStorage.length >= 0, 'localStorage available');
+
+// ---- 2b. merged Open menu dropdown wiring -----------------------------------
+console.log('\n[2b] Open menu dropdown');
+const openMenu = $('#open-menu');
+const openDropdown = $('#open-dropdown');
+assert(openDropdown.hidden === true, 'dropdown is hidden by default');
+openMenu.click();
+assert(openDropdown.hidden === false, 'dropdown opens on #open-menu click');
+assert(openMenu.getAttribute('aria-expanded') === 'true', 'aria-expanded updates to true');
+// Clicking an item should close the menu.
+$('#open-file').click();
+assert(openDropdown.hidden === true, 'dropdown closes after clicking an item');
+openMenu.click();
+assert(openDropdown.hidden === false, 'dropdown reopens');
+// Outside click closes the menu.
+document.body.click();
+assert(openDropdown.hidden === true, 'dropdown closes on outside click');
+openMenu.click();
+// Escape closes the menu.
+document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
+assert(openDropdown.hidden === true, 'dropdown closes on Escape');
 
 // ---- 3. outline renders items from the welcome doc --------------------------
 console.log('\n[3] Outline');
