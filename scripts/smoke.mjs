@@ -238,10 +238,22 @@ assert($('.sidebar-tabs') !== null, 'sidebar tabs built');
 assert($$('.sidebar-tab').length === 2, 'two sidebar tabs exist');
 assert($('#file-tree .tree-empty')?.textContent.includes('Open a folder to browse'),
   'file tree shows the empty state (sidebar init ran)');
+// Empty state is a clickable affordance that triggers the titlebar Open action.
+// In jsdom (browser path) it targets #open-folder, which is disabled (no
+// showDirectoryPicker), so the click is inert and must not throw or clear the tree.
+const emptyTreeLi = $('#file-tree .tree-empty');
+assert(emptyTreeLi !== null && emptyTreeLi.classList.contains('tree-empty-action'),
+  'empty file-tree state carries the clickable affordance class');
+emptyTreeLi.click();
+assert($('#file-tree .tree-empty') !== null, 'empty state persists after an inert click');
 assert($('#open-menu') !== null, '#open-menu button exists');
 assert($('#open-dropdown') !== null, '#open-dropdown exists');
 assert($('#open-dropdown').contains($('#open-folder')), '#open-folder lives inside the dropdown');
 assert($('#open-folder').disabled === true, '#open-folder disabled without showDirectoryPicker');
+assert($('#export-menu') !== null, '#export-menu button exists');
+assert($('#export-dropdown') !== null, '#export-dropdown exists');
+assert($('#export-dropdown').contains($('#export-html')), '#export-html lives inside the export dropdown');
+assert($('#export-dropdown').contains($('#export-pdf')), '#export-pdf lives inside the export dropdown');
 assert($('#up-dir') !== null, '#up-dir button exists');
 assert($('#up-dir').disabled === true, '#up-dir disabled when no folder is open');
 assert($('#root-name') !== null, '#root-name label exists');
@@ -272,6 +284,27 @@ openMenu.click();
 // Escape closes the menu.
 document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
 assert(openDropdown.hidden === true, 'dropdown closes on Escape');
+
+// ---- 2c. Export menu dropdown wiring ----------------------------------------
+console.log('\n[2c] Export menu dropdown');
+const exportMenu = $('#export-menu');
+const exportDropdown = $('#export-dropdown');
+assert(exportDropdown.hidden === true, 'export dropdown is hidden by default');
+exportMenu.click();
+assert(exportDropdown.hidden === false, 'export dropdown opens on #export-menu click');
+assert(exportMenu.getAttribute('aria-expanded') === 'true', 'export aria-expanded updates to true');
+// Clicking an item should close the menu.
+$('#export-pdf').click();
+assert(exportDropdown.hidden === true, 'export dropdown closes after clicking an item');
+exportMenu.click();
+assert(exportDropdown.hidden === false, 'export dropdown reopens');
+// Outside click closes the menu.
+document.body.click();
+assert(exportDropdown.hidden === true, 'export dropdown closes on outside click');
+exportMenu.click();
+// Escape closes the menu.
+document.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Escape' }));
+assert(exportDropdown.hidden === true, 'export dropdown closes on Escape');
 
 // ---- 3. outline renders items from the welcome doc --------------------------
 console.log('\n[3] Outline');

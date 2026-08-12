@@ -99,9 +99,9 @@ body.tauri .titlebar { padding-left: 78px; }
   color: var(--fg);
 }
 
-.open-menu-wrap { position: relative; }
+.titlebar-menu-wrap { position: relative; }
 
-.open-dropdown {
+.titlebar-dropdown {
   position: absolute;
   top: 100%;
   right: 0;
@@ -118,7 +118,7 @@ body.tauri .titlebar { padding-left: 78px; }
   z-index: 100;
 }
 
-.open-dropdown[hidden] { display: none; }
+.titlebar-dropdown[hidden] { display: none; }
 
 .titlebar-dropdown-item {
   border: none;

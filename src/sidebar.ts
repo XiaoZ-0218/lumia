@@ -230,6 +230,11 @@ function wireUpDir(): void {
   });
 }
 
+/** Load a folder into the Files tree (used by both folder picker and unified open). */
+export async function openFolder(path: string): Promise<void> {
+  await loadRootTauri(path);
+}
+
 async function loadRootTauri(path: string): Promise<void> {
   currentRoot = { kind: 'tauri', path };
   updateFilesHeader();
@@ -288,6 +293,35 @@ function wireOpenFolder(): void {
     return;
   }
   btn.addEventListener('click', () => void pickFolder());
+}
+
+/** Tauri uses a single "Open…" action (file-or-folder picker); browsers keep
+ *  separate "Open file" / "Open folder" items because FS Access API has no
+ *  mixed picker. */
+function renderOpenDropdownItems(): void {
+  const dropdown = document.getElementById('open-dropdown') as HTMLDivElement | null;
+  const openFile = document.getElementById('open-file') as HTMLButtonElement | null;
+  const openFolder = document.getElementById('open-folder') as HTMLButtonElement | null;
+  const openMenu = document.getElementById('open-menu') as HTMLButtonElement | null;
+  if (!dropdown || !openFile) return;
+
+  if (isTauri()) {
+    openFile.textContent = 'Open…';
+    openFile.title = 'Open file or folder (⌘O)';
+    openFile.setAttribute('aria-label', 'Open file or folder');
+    openFolder?.remove();
+    // A one-item dropdown is just an extra click: collapse the menu into a
+    // direct trigger so one click opens the picker (wired in initFiles).
+    if (openMenu) {
+      openMenu.textContent = 'Open';
+      openMenu.title = 'Open file or folder (⌘O)';
+      openMenu.setAttribute('aria-label', 'Open file or folder');
+      openMenu.removeAttribute('aria-haspopup');
+      openMenu.removeAttribute('aria-expanded');
+      dropdown.hidden = true;
+    }
+  }
+  // In browsers the static two-item markup is left untouched.
 }
 
 /** Load a folder into the Files tree and highlight the named file as active. */
@@ -355,6 +389,7 @@ function updateActiveOutline(): void {
 
 export function initSidebar(): void {
   buildTabs();
+  renderOpenDropdownItems();
   wireOpenFolder();
   wireUpDir();
   updateFilesHeader();
@@ -363,8 +398,15 @@ export function initSidebar(): void {
   if (tree) {
     tree.textContent = '';
     const li = document.createElement('li');
-    li.className = 'tree-empty';
+    li.className = 'tree-empty tree-empty-action';
     li.textContent = 'Open a folder to browse';
+    li.title = 'Open a folder';
+    // No folder open yet: clicking the empty state mirrors the titlebar's Open
+    // button — the unified picker in Tauri, the folder picker in browsers.
+    li.addEventListener('click', () => {
+      const target = isTauri() ? 'open-file' : 'open-folder';
+      document.getElementById(target)?.click();
+    });
     tree.appendChild(li);
   }
 

@@ -1,8 +1,8 @@
 // Files: open/save single .md + autosave/restore (Typora-style).
 
 import { onUpdate, ready } from './editor';
-import { revealFile } from './sidebar';
-import { isTauri, openMarkdownFile, saveMarkdownFile, writeText } from './tauri-bridge';
+import { openFolder, revealFile } from './sidebar';
+import { isTauri, openMarkdownFile, pickFileOrFolder, saveMarkdownFile, writeText } from './tauri-bridge';
 
 // lib.dom ships FileSystemFileHandle but not the picker methods — declare them.
 type FilePickerAcceptType = { description?: string; accept: Record<string, string[]> };
@@ -60,7 +60,13 @@ async function applyOpened(text: string, name: string, handle: FileSystemFileHan
 
 async function openFile(): Promise<void> {
   if (isTauri()) {
-    const file = await openMarkdownFile();
+    const picked = await pickFileOrFolder();
+    if (!picked) return;
+    if (picked.kind === 'dir') {
+      void openFolder(picked.path);
+      return;
+    }
+    const file = await openMarkdownFile(picked.path);
     if (file) {
       await applyOpened(file.text, file.name, file.path);
       // Browser file handles cannot reveal their containing folder, but Tauri
@@ -176,12 +182,21 @@ export function initFiles(): void {
   // ---- open dropdown: merged Open file / Open folder menu ----
   const openMenu = document.getElementById('open-menu') as HTMLButtonElement | null;
   const openDropdown = document.getElementById('open-dropdown') as HTMLDivElement | null;
-  function setDropdownOpen(open: boolean): void {
-    if (!openDropdown || !openMenu) return;
-    openDropdown.hidden = !open;
-    openMenu.setAttribute('aria-expanded', String(open));
-  }
-  if (openMenu && openDropdown) {
+  const openItems = openDropdown
+    ? Array.from(openDropdown.querySelectorAll<HTMLButtonElement>('button'))
+    : [];
+
+  if (openMenu && openDropdown && openItems.length === 1) {
+    // Tauri: one open action — the button triggers it directly, no dropdown.
+    const only = openItems[0];
+    openMenu.addEventListener('click', () => only?.click());
+  } else if (openMenu && openDropdown) {
+    // Browser: two actions — toggle the dropdown.
+    function setDropdownOpen(open: boolean): void {
+      if (!openDropdown || !openMenu) return;
+      openDropdown.hidden = !open;
+      openMenu.setAttribute('aria-expanded', String(open));
+    }
     openMenu.addEventListener('click', (e) => {
       e.stopPropagation();
       setDropdownOpen(Boolean(openDropdown.hidden));

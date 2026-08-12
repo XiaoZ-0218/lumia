@@ -124,6 +124,8 @@
 }
 
 .tree-empty { color: var(--muted); font-style: italic; cursor: default; }
+.tree-empty-action { cursor: pointer; }
+.tree-empty-action:hover { color: var(--fg); text-decoration: underline; }
 
 /* ---- outline ---- */
 .outline-item.lvl-1 { padding-left: 8px; }
