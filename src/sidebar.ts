@@ -230,6 +230,11 @@ function wireUpDir(): void {
   });
 }
 
+/** Load a folder into the Files tree (used by both folder picker and unified open). */
+export async function openFolder(path: string): Promise<void> {
+  await loadRootTauri(path);
+}
+
 async function loadRootTauri(path: string): Promise<void> {
   currentRoot = { kind: 'tauri', path };
   updateFilesHeader();
@@ -288,6 +293,24 @@ function wireOpenFolder(): void {
     return;
   }
   btn.addEventListener('click', () => void pickFolder());
+}
+
+/** Tauri uses a single "Open…" action (file-or-folder picker); browsers keep
+ *  separate "Open file" / "Open folder" items because FS Access API has no
+ *  mixed picker. */
+function renderOpenDropdownItems(): void {
+  const dropdown = document.getElementById('open-dropdown') as HTMLDivElement | null;
+  const openFile = document.getElementById('open-file') as HTMLButtonElement | null;
+  const openFolder = document.getElementById('open-folder') as HTMLButtonElement | null;
+  if (!dropdown || !openFile) return;
+
+  if (isTauri()) {
+    openFile.textContent = 'Open…';
+    openFile.title = 'Open file or folder (⌘O)';
+    openFile.setAttribute('aria-label', 'Open file or folder');
+    openFolder?.remove();
+  }
+  // In browsers the static two-item markup is left untouched.
 }
 
 /** Load a folder into the Files tree and highlight the named file as active. */
@@ -355,6 +378,7 @@ function updateActiveOutline(): void {
 
 export function initSidebar(): void {
   buildTabs();
+  renderOpenDropdownItems();
   wireOpenFolder();
   wireUpDir();
   updateFilesHeader();

@@ -1,8 +1,9 @@
 // Thin bridge to the Tauri v2 native APIs. Inert in plain browsers: isTauri()
 // is false there, so callers keep their existing web (FS Access API) paths.
 
+import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { readDir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readDir, readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
 
 /** True when running inside the Tauri v2 shell (WKWebView injects this global). */
 export function isTauri(): boolean {
@@ -28,11 +29,12 @@ function skipDirName(name: string): boolean {
   return name.startsWith('.') || name === 'node_modules';
 }
 
-/** Open one markdown file via the native dialog; null when cancelled. */
-export async function openMarkdownFile(): Promise<{ path: string; name: string; text: string } | null> {
-  const path = await open({ multiple: false, filters: [MD_FILTER] });
-  if (path === null) return null;
-  return { path, name: baseName(path), text: await readTextFile(path) };
+/** Open one markdown file via the native dialog, or read it directly when a
+ *  path is supplied (used after the unified file-or-folder picker). */
+export async function openMarkdownFile(path?: string): Promise<{ path: string; name: string; text: string } | null> {
+  const resolved = path ?? (await open({ multiple: false, filters: [MD_FILTER] }));
+  if (resolved === null) return null;
+  return { path: resolved, name: baseName(resolved), text: await readTextFile(resolved) };
 }
 
 /** Save dialog seeded with defaultName; resolves to the path or null when cancelled. */
@@ -43,6 +45,18 @@ export async function saveMarkdownFile(defaultName: string): Promise<string | nu
 /** Directory picker; resolves to the folder path or null when cancelled. */
 export async function pickDirectory(): Promise<string | null> {
   return open({ directory: true, multiple: false });
+}
+
+/** Unified file-or-folder picker (macOS only). Resolves to the chosen path
+ *  and whether it is a file or directory, or null when cancelled. */
+export async function pickFileOrFolder(): Promise<{ kind: 'file' | 'dir'; path: string } | null> {
+  const path = await invoke<string | null>('pick_file_or_folder');
+  if (!path) return null;
+  const info = await stat(path);
+  if (info.isDirectory) return { kind: 'dir', path };
+  if (info.isFile) return { kind: 'file', path };
+  // Fallback: treat unrecognized results as files (shouldn't happen).
+  return { kind: 'file', path };
 }
 
 /** Read a UTF-8 text file at an absolute path. */
