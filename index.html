@@ -14,16 +14,21 @@
       </div>
       <span class="doc-title" id="doc-title">Untitled</span>
       <div class="titlebar-right">
-        <div class="open-menu-wrap">
+        <div class="titlebar-menu-wrap">
           <button class="titlebar-btn" id="open-menu" title="Open" aria-label="Open" aria-haspopup="true" aria-expanded="false">Open ▾</button>
-          <div class="open-dropdown" id="open-dropdown" hidden>
+          <div class="titlebar-dropdown" id="open-dropdown" hidden>
             <button class="titlebar-dropdown-item" id="open-file" title="Open file (⌘O)" aria-label="Open file">Open file</button>
             <button class="titlebar-dropdown-item" id="open-folder" title="Open folder" aria-label="Open folder">Open folder</button>
           </div>
         </div>
         <button class="titlebar-btn" id="save-file" title="Save file (⌘S)" aria-label="Save file">Save</button>
-        <button class="titlebar-btn" id="export-html" title="Export as HTML" aria-label="Export as HTML">HTML</button>
-        <button class="titlebar-btn" id="export-pdf" title="Print / export PDF (⌘P)" aria-label="Export as PDF">PDF</button>
+        <div class="titlebar-menu-wrap">
+          <button class="titlebar-btn" id="export-menu" title="Export" aria-label="Export" aria-haspopup="true" aria-expanded="false">Export ▾</button>
+          <div class="titlebar-dropdown" id="export-dropdown" hidden>
+            <button class="titlebar-dropdown-item" id="export-html" title="Export as HTML" aria-label="Export as HTML">HTML</button>
+            <button class="titlebar-dropdown-item" id="export-pdf" title="Print / export PDF (⌘P)" aria-label="Export as PDF">PDF</button>
+          </div>
+        </div>
         <button class="titlebar-btn" id="sidebar-toggle" title="Toggle sidebar" aria-label="Toggle sidebar">☰</button>
       </div>
     </header>

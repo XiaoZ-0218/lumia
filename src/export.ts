@@ -75,7 +75,35 @@ async function exportHtml(): Promise<void> {
   download(`${sanitizeFilename(title)}.html`, buildExportHtml(content, themeCss, themeClass(), title));
 }
 
+function wireDropdown(menuId: string, dropdownId: string): void {
+  const menu = document.getElementById(menuId) as HTMLButtonElement | null;
+  const dropdown = document.getElementById(dropdownId) as HTMLDivElement | null;
+  if (!menu || !dropdown) return;
+
+  const setOpen = (open: boolean): void => {
+    dropdown.hidden = !open;
+    menu.setAttribute('aria-expanded', String(open));
+  };
+
+  menu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    setOpen(Boolean(dropdown.hidden));
+  });
+  dropdown.querySelectorAll('button').forEach((btn) => {
+    btn.addEventListener('click', () => setOpen(false));
+  });
+  document.addEventListener('click', (e) => {
+    if (!dropdown.hidden && !dropdown.contains(e.target as Node) && e.target !== menu) {
+      setOpen(false);
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !dropdown.hidden) setOpen(false);
+  });
+}
+
 function wireExport(): void {
+  wireDropdown('export-menu', 'export-dropdown');
   document.getElementById('export-html')?.addEventListener('click', () => {
     void exportHtml();
   });
