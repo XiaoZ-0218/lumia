@@ -238,6 +238,14 @@ assert($('.sidebar-tabs') !== null, 'sidebar tabs built');
 assert($$('.sidebar-tab').length === 2, 'two sidebar tabs exist');
 assert($('#file-tree .tree-empty')?.textContent.includes('Open a folder to browse'),
   'file tree shows the empty state (sidebar init ran)');
+// Empty state is a clickable affordance that triggers the titlebar Open action.
+// In jsdom (browser path) it targets #open-folder, which is disabled (no
+// showDirectoryPicker), so the click is inert and must not throw or clear the tree.
+const emptyTreeLi = $('#file-tree .tree-empty');
+assert(emptyTreeLi !== null && emptyTreeLi.classList.contains('tree-empty-action'),
+  'empty file-tree state carries the clickable affordance class');
+emptyTreeLi.click();
+assert($('#file-tree .tree-empty') !== null, 'empty state persists after an inert click');
 assert($('#open-menu') !== null, '#open-menu button exists');
 assert($('#open-dropdown') !== null, '#open-dropdown exists');
 assert($('#open-dropdown').contains($('#open-folder')), '#open-folder lives inside the dropdown');

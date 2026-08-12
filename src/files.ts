@@ -182,12 +182,21 @@ export function initFiles(): void {
   // ---- open dropdown: merged Open file / Open folder menu ----
   const openMenu = document.getElementById('open-menu') as HTMLButtonElement | null;
   const openDropdown = document.getElementById('open-dropdown') as HTMLDivElement | null;
-  function setDropdownOpen(open: boolean): void {
-    if (!openDropdown || !openMenu) return;
-    openDropdown.hidden = !open;
-    openMenu.setAttribute('aria-expanded', String(open));
-  }
-  if (openMenu && openDropdown) {
+  const openItems = openDropdown
+    ? Array.from(openDropdown.querySelectorAll<HTMLButtonElement>('button'))
+    : [];
+
+  if (openMenu && openDropdown && openItems.length === 1) {
+    // Tauri: one open action — the button triggers it directly, no dropdown.
+    const only = openItems[0];
+    openMenu.addEventListener('click', () => only?.click());
+  } else if (openMenu && openDropdown) {
+    // Browser: two actions — toggle the dropdown.
+    function setDropdownOpen(open: boolean): void {
+      if (!openDropdown || !openMenu) return;
+      openDropdown.hidden = !open;
+      openMenu.setAttribute('aria-expanded', String(open));
+    }
     openMenu.addEventListener('click', (e) => {
       e.stopPropagation();
       setDropdownOpen(Boolean(openDropdown.hidden));
