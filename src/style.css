@@ -274,6 +274,12 @@ body.source-mode #editor .milkdown { display: none; }
   font-weight: 600;
 }
 
+.statusbar-label {
+  color: var(--muted);
+  font-size: 11px;
+  margin-right: -2px;
+}
+
 .statusbar select {
   background: var(--bg);
   color: var(--fg);

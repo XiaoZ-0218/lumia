@@ -71,18 +71,58 @@
 /* ---- file tree ---- */
 #file-tree li, .outline-item { cursor: pointer; }
 
+/* Rows manage their own hover: hovering a nested item must not paint every
+   ancestor dir li (the li wraps the whole subtree), so suppress li-level hover. */
+#file-tree li:hover { background: transparent; }
+
+.sidebar li.tree-dir { padding: 0; }
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+  transition: background-color 120ms ease;
+}
+
+.tree-row:hover { background: var(--border); }
+
 .tree-caret {
-  display: inline-block;
+  flex: none;
   width: 14px;
   color: var(--muted);
   font-size: 10px;
   user-select: none;
 }
 
-.tree-dir > .tree-label { font-weight: 600; }
+.tree-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+}
+
 .sidebar .tree-children { padding-left: 14px; }
 
-#file-tree li.active { color: var(--accent); font-weight: 600; }
+.tree-file {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* align file names with dir labels (row padding + caret width + gap) */
+  padding-left: 24px;
+  transition: background-color 120ms ease;
+}
+
+#file-tree li.tree-file:hover { background: var(--border); }
+
+#file-tree li.tree-file.active,
+#file-tree li.tree-file.active:hover {
+  color: var(--accent);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
 .tree-empty { color: var(--muted); font-style: italic; cursor: default; }
 
 /* ---- outline ---- */

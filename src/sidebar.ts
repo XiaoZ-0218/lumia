@@ -38,6 +38,12 @@ type Root = { kind: 'tauri'; path: string } | { kind: 'fsa'; handle: FSADirHandl
 
 let currentRoot: Root | null = null;
 
+/** Last path segment — the files header shows the folder name, not the full path. */
+function baseName(path: string): string {
+  const i = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
+  return i === -1 ? path : path.slice(i + 1);
+}
+
 // ---- tabs: restructure .sidebar into a Files | Outline tab bar ----
 function buildTabs(): void {
   const sidebar = document.querySelector('.sidebar');
@@ -122,6 +128,10 @@ async function loadChildren(node: DirNode): Promise<TreeNode[]> {
 function renderDirNode(node: DirNode, li: HTMLLIElement): void {
   li.textContent = '';
   li.className = 'tree-dir';
+  // The clickable row is a wrapper div (not the li) so hover styles apply to
+  // the row only — the li also contains the children subtree.
+  const row = document.createElement('div');
+  row.className = 'tree-row';
   const caret = document.createElement('span');
   caret.className = 'tree-caret';
   caret.textContent = '▸';
@@ -131,7 +141,8 @@ function renderDirNode(node: DirNode, li: HTMLLIElement): void {
   const children = document.createElement('ul');
   children.className = 'tree-children';
   children.hidden = true;
-  li.append(caret, label, children);
+  row.append(caret, label);
+  li.append(row, children);
 
   const toggle = async (): Promise<void> => {
     const opening = !li.classList.contains('open');
@@ -143,11 +154,7 @@ function renderDirNode(node: DirNode, li: HTMLLIElement): void {
     children.hidden = !open;
     caret.textContent = open ? '▾' : '▸';
   };
-  caret.addEventListener('click', (e) => {
-    e.stopPropagation();
-    void toggle();
-  });
-  label.addEventListener('click', () => void toggle());
+  row.addEventListener('click', () => void toggle());
 }
 
 function renderTree(container: HTMLUListElement, nodes: TreeNode[]): void {
@@ -196,7 +203,8 @@ function updateFilesHeader(): void {
     return;
   }
 
-  rootName.textContent = currentRoot.kind === 'tauri' ? currentRoot.path : currentRoot.handle.name;
+  rootName.textContent = currentRoot.kind === 'tauri' ? baseName(currentRoot.path) : currentRoot.handle.name;
+  rootName.title = currentRoot.kind === 'tauri' ? currentRoot.path : currentRoot.handle.name;
 
   if (currentRoot.kind === 'fsa') {
     // FS Access API directory handles do not expose their parent directory, so
