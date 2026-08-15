@@ -549,6 +549,10 @@ const dom2 = new JSDOM(html2, {
 });
 const w2 = dom2.window;
 w2.localStorage.setItem('lumia:lang', 'zh'); // saved choice wins over detection
+// Stale session keys from a desktop run must be ignored by the browser build
+// (folder/file restore is Tauri-only; browsers can't re-open handles).
+w2.localStorage.setItem('lumia:lastFolder', '/nonexistent');
+w2.localStorage.setItem('lumia:lastFile', '/nonexistent/note.md');
 for (const key of globalsToCopy) {
   Object.defineProperty(globalThis, key, {
     value: w2[key],
@@ -585,6 +589,8 @@ await waitFor(
 assert(w2.document.querySelector('#root-name').textContent === '无文件夹', 'zh chrome on second boot');
 assert(w2.document.querySelector('.sidebar-tab').textContent === '文件', 'zh Files tab on second boot');
 assert(w2.localStorage.getItem('lumia:lang') === 'zh', 'saved locale untouched by boot');
+assert(w2.document.querySelector('#file-tree .tree-empty-action'), 'browser boot ignores stale session keys');
+assert(w2.localStorage.getItem('lumia:lastFolder') === '/nonexistent', 'stale session keys left untouched by browser boot');
 
 // ---- summary ------------------------------------------------------------------
 console.log('\njsdom "not implemented" notices (expected):');

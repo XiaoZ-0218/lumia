@@ -13,6 +13,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   launch follows the OS language, the manual choice persists in
   `lumia:lang`, and the welcome document is localized. Switching never
   touches the open document.
+- **Session restore** (desktop app): the last opened folder and file are
+  remembered (`lumia:lastFolder` / `lumia:lastFile`) and reopen automatically
+  on the next launch. An autosaved draft with unsaved edits still wins over
+  the on-disk file content.
 
 ## [0.1.0] - 2026-08-10
 

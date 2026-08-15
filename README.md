@@ -16,6 +16,7 @@ English | [中文](README_CN.md)
 - **View modes**: focus mode (F8, dims all but the active block) and typewriter mode (keeps the caret centered), persisted across sessions
 - **Zoom**: editor font scaling (`⌘+` / `⌘-`, 50%–200%)
 - **Autosave**: drafts are debounced to localStorage every 500 ms and restored on launch
+- **Session restore** (desktop): the last opened folder and file reopen automatically on the next launch
 - **Word count**: live word / character stats in the status bar
 - **UI languages**: statusbar switcher for English / 简体中文 / 日本語 — follows the OS language on first launch, persists your choice, welcome document included
 
