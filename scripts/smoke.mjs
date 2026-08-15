@@ -509,6 +509,13 @@ assert($('#file-tree .tree-empty-action').textContent === '打开文件夹以浏
   'empty-tree call-to-action flips');
 assert($('#up-dir').title === '请先打开文件夹', 'up-dir tooltip flips via updateFilesHeader');
 
+// Stats format and the untitled fallback follow the locale.
+await editor.setMarkdown('# 本地化检查\n\n你好世界');
+await waitFor(() => $('#word-count').textContent.includes('词'), 'stats render in Chinese format');
+assert($('#doc-title').textContent === '本地化检查', 'title still follows the doc');
+await editor.setMarkdown('no heading here');
+await waitFor(() => $('#doc-title').textContent === '无标题', 'untitled fallback localizes');
+
 langSelect.value = 'ja';
 langSelect.dispatchEvent(new Event('change', { bubbles: true }));
 assert($('#root-name').textContent === 'フォルダなし', 'static texts flip to Japanese');
@@ -517,6 +524,9 @@ langSelect.value = 'en';
 langSelect.dispatchEvent(new Event('change', { bubbles: true }));
 assert($('#root-name').textContent === 'No folder', 'switching back to English restores texts');
 localStorage.removeItem('lumia:lang');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'welcome doc restored after i18n section');
 
 // ---- summary ------------------------------------------------------------------
 console.log('\njsdom "not implemented" notices (expected):');

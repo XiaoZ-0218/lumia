@@ -9,6 +9,7 @@ import { Plugin, PluginKey } from '@milkdown/prose/state';
 import { Decoration, DecorationSet } from '@milkdown/prose/view';
 import type { EditorView, NodeView } from '@milkdown/prose/view';
 import { $prose } from '@milkdown/utils';
+import { t } from './i18n';
 
 // Marks the top-level block containing the caret with .focus-active, so focus
 // mode can dim everything else. A decoration (not manual DOM classes), because
@@ -117,13 +118,14 @@ function countWords(text: string): number {
 
 function renderStats(text: string) {
   const el = document.getElementById('word-count');
-  if (el) el.textContent = `${countWords(text)} words · ${text.length} chars`;
+  if (el) el.textContent = t('stats', { words: countWords(text), chars: text.length });
 }
 
 function renderTitle(title: string) {
   const el = document.getElementById('doc-title');
-  if (el) el.textContent = title || 'Untitled';
-  document.title = title || 'Untitled';
+  const shown = title || t('untitled');
+  if (el) el.textContent = shown;
+  document.title = shown;
 }
 
 function titleFromDoc(doc: NodeLike): string {
