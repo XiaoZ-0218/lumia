@@ -1,6 +1,7 @@
 // Sidebar: Typora-style Files | Outline tabs, folder file tree, and doc outline.
 import './sidebar.css';
 import { onUpdate, ready } from './editor';
+import { t, onLocaleChange } from './i18n';
 import { isTauri, parentDir, pickDirectory, readDirShallow, readText } from './tauri-bridge';
 import type { TreeEntry as BridgeTreeEntry } from './tauri-bridge';
 
@@ -53,8 +54,8 @@ function buildTabs(): void {
   sidebar.classList.add('sidebar-tabs-root');
 
   const config = [
-    { label: 'Files', key: 'files', section: sections[0] },
-    { label: 'Outline', key: 'outline', section: sections[1] },
+    { i18nKey: 'files' as const, key: 'files', section: sections[0] },
+    { i18nKey: 'outline' as const, key: 'outline', section: sections[1] },
   ];
   const tabBar = document.createElement('div');
   tabBar.className = 'sidebar-tabs';
@@ -65,12 +66,15 @@ function buildTabs(): void {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'sidebar-tab';
-    btn.textContent = c.label;
+    btn.textContent = t(c.i18nKey);
     btn.addEventListener('click', () => activate(c.key));
     buttons.set(c.key, btn);
     tabBar.appendChild(btn);
   }
   sidebar.prepend(tabBar);
+  onLocaleChange(() => {
+    for (const c of config) buttons.get(c.key)!.textContent = t(c.i18nKey);
+  });
 
   function activate(key: string): void {
     for (const c of config) {
@@ -162,7 +166,7 @@ function renderTree(container: HTMLUListElement, nodes: TreeNode[]): void {
   if (nodes.length === 0) {
     const empty = document.createElement('li');
     empty.className = 'tree-empty';
-    empty.textContent = 'Empty folder';
+    empty.textContent = t('emptyFolder');
     container.appendChild(empty);
     return;
   }
@@ -197,9 +201,9 @@ function updateFilesHeader(): void {
   if (!upBtn || !rootName) return;
 
   if (!currentRoot) {
-    rootName.textContent = 'No folder';
+    rootName.textContent = t('noFolder');
     upBtn.disabled = true;
-    upBtn.title = 'Open a folder first';
+    upBtn.title = t('openFolderFirst');
     return;
   }
 
@@ -210,13 +214,13 @@ function updateFilesHeader(): void {
     // FS Access API directory handles do not expose their parent directory, so
     // upward navigation is impossible in the browser version.
     upBtn.disabled = true;
-    upBtn.title = 'Parent navigation is unavailable in the browser';
+    upBtn.title = t('parentUnavailable');
     return;
   }
 
   const parent = parentDir(currentRoot.path);
   upBtn.disabled = parent === null;
-  upBtn.title = parent === null ? 'Already at filesystem root' : 'Open parent folder';
+  upBtn.title = parent === null ? t('atRoot') : t('openParent');
 }
 
 function wireUpDir(): void {
@@ -248,7 +252,7 @@ async function loadRootTauri(path: string): Promise<void> {
     tree.textContent = '';
     const li = document.createElement('li');
     li.className = 'tree-empty';
-    li.textContent = 'Could not read folder';
+    li.textContent = t('couldNotReadFolder');
     tree.appendChild(li);
   }
 }
@@ -266,7 +270,7 @@ async function loadRootFSA(handle: FSADirHandle): Promise<void> {
     tree.textContent = '';
     const li = document.createElement('li');
     li.className = 'tree-empty';
-    li.textContent = 'Could not read folder';
+    li.textContent = t('couldNotReadFolder');
     tree.appendChild(li);
   }
 }
@@ -289,7 +293,7 @@ function wireOpenFolder(): void {
   if (!btn) return;
   if (!isTauri() && typeof window.showDirectoryPicker !== 'function') {
     btn.disabled = true;
-    btn.title = 'Open folder — requires Chrome/Edge';
+    btn.title = t('openFolderBrowser');
     return;
   }
   btn.addEventListener('click', () => void pickFolder());
@@ -306,16 +310,16 @@ function renderOpenDropdownItems(): void {
   if (!dropdown || !openFile) return;
 
   if (isTauri()) {
-    openFile.textContent = 'Open…';
-    openFile.title = 'Open file or folder (⌘O)';
-    openFile.setAttribute('aria-label', 'Open file or folder');
+    openFile.textContent = t('openPick');
+    openFile.title = t('openPickTitle');
+    openFile.setAttribute('aria-label', t('openPickTitle'));
     openFolder?.remove();
     // A one-item dropdown is just an extra click: collapse the menu into a
     // direct trigger so one click opens the picker (wired in initFiles).
     if (openMenu) {
-      openMenu.textContent = 'Open';
-      openMenu.title = 'Open file or folder (⌘O)';
-      openMenu.setAttribute('aria-label', 'Open file or folder');
+      openMenu.textContent = t('openPlain');
+      openMenu.title = t('openPickTitle');
+      openMenu.setAttribute('aria-label', t('openPickTitle'));
       openMenu.removeAttribute('aria-haspopup');
       openMenu.removeAttribute('aria-expanded');
       dropdown.hidden = true;
@@ -358,7 +362,7 @@ function renderOutline(heads: Heading[]): void {
   heads.forEach((h, i) => {
     const li = document.createElement('li');
     li.className = `outline-item lvl-${h.level}`;
-    li.textContent = h.text || '(untitled)';
+    li.textContent = h.text || t('outlineUntitled');
     li.addEventListener('click', () => scrollToHeading(i));
     ul.appendChild(li);
   });
@@ -399,8 +403,8 @@ export function initSidebar(): void {
     tree.textContent = '';
     const li = document.createElement('li');
     li.className = 'tree-empty tree-empty-action';
-    li.textContent = 'Open a folder to browse';
-    li.title = 'Open a folder';
+    li.textContent = t('openFolderToBrowse');
+    li.title = t('openFolder');
     // No folder open yet: clicking the empty state mirrors the titlebar's Open
     // button — the unified picker in Tauri, the folder picker in browsers.
     li.addEventListener('click', () => {
@@ -409,6 +413,18 @@ export function initSidebar(): void {
     });
     tree.appendChild(li);
   }
+
+  // Locale switch: re-assert the strings this module renders outside of
+  // t() call sites (files header, Tauri open-button rewrite, empty state).
+  onLocaleChange(() => {
+    updateFilesHeader();
+    renderOpenDropdownItems();
+    const empty = document.querySelector('#file-tree .tree-empty-action');
+    if (empty) {
+      empty.textContent = t('openFolderToBrowse');
+      (empty as HTMLElement).title = t('openFolder');
+    }
+  });
 
   void (async () => {
     await ready;

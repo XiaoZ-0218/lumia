@@ -503,6 +503,11 @@ assert($('#save-file').textContent === '保存', 'Save button flips to Chinese')
 assert($('#save-file').title === '保存文件 (⌘S)', 'titles flip to Chinese');
 assert(localStorage.getItem('lumia:lang') === 'zh', 'manual choice persists to localStorage');
 assert(document.documentElement.lang === 'zh', '<html lang> follows the locale');
+assert($$('.sidebar-tab')[0].textContent === '文件', 'Files tab label flips (built in JS)');
+assert($$('.sidebar-tab')[1].textContent === '大纲', 'Outline tab label flips');
+assert($('#file-tree .tree-empty-action').textContent === '打开文件夹以浏览',
+  'empty-tree call-to-action flips');
+assert($('#up-dir').title === '请先打开文件夹', 'up-dir tooltip flips via updateFilesHeader');
 
 langSelect.value = 'ja';
 langSelect.dispatchEvent(new Event('change', { bubbles: true }));
