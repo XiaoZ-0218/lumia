@@ -487,6 +487,32 @@ assert(pm().style.zoom === '1.1', `zoom applied (${z0} → ${pm().style.zoom})`)
 $('#zoom-out').click();
 assert(pm().style.zoom === '1', `zoom back to 100% (${pm().style.zoom})`);
 
+// ---- 10. language switcher (i18n) ------------------------------------------
+console.log('\n[10] Language switcher');
+const langSelect = $('#lang-select');
+assert(langSelect !== null, '#lang-select exists in the statusbar');
+assert(langSelect !== null && langSelect.querySelectorAll('option').length === 3,
+  'lang select offers en/zh/ja');
+assert(langSelect.value === 'en', 'lang select starts at en (system fallback)');
+assert($('#root-name').textContent === 'No folder', 'English chrome before switch');
+
+langSelect.value = 'zh';
+langSelect.dispatchEvent(new Event('change', { bubbles: true }));
+assert($('#root-name').textContent === '无文件夹', 'static texts flip to Chinese');
+assert($('#save-file').textContent === '保存', 'Save button flips to Chinese');
+assert($('#save-file').title === '保存文件 (⌘S)', 'titles flip to Chinese');
+assert(localStorage.getItem('lumia:lang') === 'zh', 'manual choice persists to localStorage');
+assert(document.documentElement.lang === 'zh', '<html lang> follows the locale');
+
+langSelect.value = 'ja';
+langSelect.dispatchEvent(new Event('change', { bubbles: true }));
+assert($('#root-name').textContent === 'フォルダなし', 'static texts flip to Japanese');
+
+langSelect.value = 'en';
+langSelect.dispatchEvent(new Event('change', { bubbles: true }));
+assert($('#root-name').textContent === 'No folder', 'switching back to English restores texts');
+localStorage.removeItem('lumia:lang');
+
 // ---- summary ------------------------------------------------------------------
 console.log('\njsdom "not implemented" notices (expected):');
 for (const e of jsdomErrors) console.log('  -', e);

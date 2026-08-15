@@ -6,10 +6,15 @@ import { initExport } from './export';
 import { initFiles } from './files';
 import { initFormat } from './format';
 import { initViewModes } from './viewmodes';
+import { initI18n } from './i18n';
 
 // Tauri shell: real macOS traffic lights float over the overlay titlebar —
 // style.css hides the fake dots and insets the titlebar under this class.
 if (isTauri()) document.body.classList.add('tauri');
+
+// Resolve the locale and rewrite static chrome text before feature modules
+// build their dynamic strings in the resolved locale.
+initI18n();
 
 // ---- themes ----
 // import.meta.glob picks up every src/themes/*.css at build time.
