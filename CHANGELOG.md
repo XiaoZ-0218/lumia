@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-08-15
+
 ### Added
 
 - **UI language switcher** (English / 简体中文 / 日本語) in the statusbar: first
@@ -51,5 +53,6 @@ Initial release.
 - CI: `npm ci && npm test` (build + jsdom smoke test) on every push / pull request
 - CD: pushing a `v*` tag runs the test suite, builds the macOS bundle, and publishes a GitHub Release with `.dmg` / `.app` assets
 
-[Unreleased]: https://github.com/XiaoZ-0218/lumia/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/XiaoZ-0218/lumia/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/XiaoZ-0218/lumia/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/XiaoZ-0218/lumia/releases/tag/v0.1.0
