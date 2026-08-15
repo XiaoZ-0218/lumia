@@ -487,6 +487,105 @@ assert(pm().style.zoom === '1.1', `zoom applied (${z0} → ${pm().style.zoom})`)
 $('#zoom-out').click();
 assert(pm().style.zoom === '1', `zoom back to 100% (${pm().style.zoom})`);
 
+// ---- 10. language switcher (i18n) ------------------------------------------
+console.log('\n[10] Language switcher');
+const langSelect = $('#lang-select');
+assert(langSelect !== null, '#lang-select exists in the statusbar');
+assert(langSelect !== null && langSelect.querySelectorAll('option').length === 3,
+  'lang select offers en/zh/ja');
+assert(langSelect.value === 'en', 'lang select starts at en (system fallback)');
+assert($('#root-name').textContent === 'No folder', 'English chrome before switch');
+
+langSelect.value = 'zh';
+langSelect.dispatchEvent(new Event('change', { bubbles: true }));
+assert($('#root-name').textContent === '无文件夹', 'static texts flip to Chinese');
+assert($('#save-file').textContent === '保存', 'Save button flips to Chinese');
+assert($('#save-file').title === '保存文件 (⌘S)', 'titles flip to Chinese');
+assert(localStorage.getItem('lumia:lang') === 'zh', 'manual choice persists to localStorage');
+assert(document.documentElement.lang === 'zh', '<html lang> follows the locale');
+assert($$('.sidebar-tab')[0].textContent === '文件', 'Files tab label flips (built in JS)');
+assert($$('.sidebar-tab')[1].textContent === '大纲', 'Outline tab label flips');
+assert($('#file-tree .tree-empty-action').textContent === '打开文件夹以浏览',
+  'empty-tree call-to-action flips');
+assert($('#up-dir').title === '请先打开文件夹', 'up-dir tooltip flips via updateFilesHeader');
+
+// Stats format and the untitled fallback follow the locale.
+await editor.setMarkdown('# 本地化检查\n\n你好世界');
+await waitFor(() => $('#word-count').textContent.includes('词'), 'stats render in Chinese format');
+assert($('#doc-title').textContent === '本地化检查', 'title still follows the doc');
+await editor.setMarkdown('no heading here');
+await waitFor(() => $('#doc-title').textContent === '无标题', 'untitled fallback localizes');
+
+// Exported standalone HTML carries the active locale.
+const zhExportCount = downloads.length;
+$('#export-html').click();
+await waitFor(() => downloads.length === zhExportCount + 1, 'zh export download initiated');
+{
+  const blob = createdBlobs.get(downloads[downloads.length - 1].href);
+  const html = await blob.text();
+  assert(html.includes('<html lang="zh">'), 'exported HTML lang follows the locale');
+}
+
+langSelect.value = 'ja';
+langSelect.dispatchEvent(new Event('change', { bubbles: true }));
+assert($('#root-name').textContent === 'フォルダなし', 'static texts flip to Japanese');
+
+langSelect.value = 'en';
+langSelect.dispatchEvent(new Event('change', { bubbles: true }));
+assert($('#root-name').textContent === 'No folder', 'switching back to English restores texts');
+localStorage.removeItem('lumia:lang');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'welcome doc restored after i18n section');
+
+// ---- 10b. second boot with a persisted zh locale ----------------------------
+console.log('\n[10b] Second boot (persisted zh)');
+const html2 = readFileSync(join(root, 'index.html'), 'utf8');
+const dom2 = new JSDOM(html2, {
+  url: 'http://localhost/',
+  pretendToBeVisual: true,
+  runScripts: 'outside-only',
+  virtualConsole: vc,
+});
+const w2 = dom2.window;
+w2.localStorage.setItem('lumia:lang', 'zh'); // saved choice wins over detection
+for (const key of globalsToCopy) {
+  Object.defineProperty(globalThis, key, {
+    value: w2[key],
+    configurable: true,
+    writable: true,
+  });
+}
+if (typeof w2.document.getSelection !== 'function') {
+  w2.document.getSelection = () => w2.getSelection();
+}
+w2.HTMLElement.prototype.scrollIntoView = function () {};
+for (const [proto, method] of [
+  [w2.Range.prototype, 'getBoundingClientRect'],
+  [w2.Range.prototype, 'getClientRects'],
+]) {
+  if (typeof proto[method] !== 'function') {
+    proto[method] =
+      method === 'getClientRects'
+        ? () => []
+        : () => ({ top: 0, left: 0, height: 0, width: 0, right: 0, bottom: 0, x: 0, y: 0 });
+  }
+}
+const downloads2 = [];
+w2.HTMLAnchorElement.prototype.click = function () {
+  downloads2.push({ href: this.href, download: this.download });
+};
+// The bundle is a single chunk: re-import with a cache-busting query so the
+// module graph re-executes against the fresh window.
+await import(pathToFileURL(chunkPath).href + '?boot-zh');
+await waitFor(
+  () => w2.document.querySelector('#editor .milkdown .ProseMirror')?.textContent.includes('欢迎使用 Lumia'),
+  'zh welcome doc boots on second run',
+);
+assert(w2.document.querySelector('#root-name').textContent === '无文件夹', 'zh chrome on second boot');
+assert(w2.document.querySelector('.sidebar-tab').textContent === '文件', 'zh Files tab on second boot');
+assert(w2.localStorage.getItem('lumia:lang') === 'zh', 'saved locale untouched by boot');
+
 // ---- summary ------------------------------------------------------------------
 console.log('\njsdom "not implemented" notices (expected):');
 for (const e of jsdomErrors) console.log('  -', e);

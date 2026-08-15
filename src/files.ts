@@ -2,6 +2,7 @@
 
 import { onUpdate, ready } from './editor';
 import { openFolder, revealFile } from './sidebar';
+import { t } from './i18n';
 import { isTauri, openMarkdownFile, pickFileOrFolder, saveMarkdownFile, writeText } from './tauri-bridge';
 
 // lib.dom ships FileSystemFileHandle but not the picker methods — declare them.
@@ -16,10 +17,13 @@ declare global {
   }
 }
 
-const MD_TYPES: FilePickerAcceptType = {
-  description: 'Markdown',
-  accept: { 'text/markdown': ['.md', '.markdown'] },
-};
+// Picker description resolves at call time so it follows a locale switch.
+function mdTypes(): FilePickerAcceptType {
+  return {
+    description: t('markdownTypes'),
+    accept: { 'text/markdown': ['.md', '.markdown'] },
+  };
+}
 const DRAFT_KEY = 'lumia:draft';
 
 /** File name when there is no FS handle (input-file fallback open). */
@@ -77,7 +81,7 @@ async function openFile(): Promise<void> {
   }
   if (typeof window.showOpenFilePicker !== 'function') return fileInput.click();
   try {
-    const [handle] = await window.showOpenFilePicker({ types: [MD_TYPES] });
+    const [handle] = await window.showOpenFilePicker({ types: [mdTypes()] });
     const file = await handle.getFile();
     await applyOpened(await file.text(), handle.name, handle);
   } catch (err) {
@@ -101,7 +105,7 @@ fileInput.addEventListener('change', () => {
 
 // ---- save ----
 function suggestedName(): string {
-  const title = (document.getElementById('doc-title')?.textContent ?? '').trim() || 'Untitled';
+  const title = (document.getElementById('doc-title')?.textContent ?? '').trim() || t('untitled');
   return /\.(md|markdown)$/i.test(title) ? title : `${title}.md`;
 }
 
@@ -141,7 +145,7 @@ async function saveFile(): Promise<void> {
   }
   if (typeof window.showSaveFilePicker !== 'function') return download(text);
   try {
-    const handle = await window.showSaveFilePicker({ suggestedName: suggestedName(), types: [MD_TYPES] });
+    const handle = await window.showSaveFilePicker({ suggestedName: suggestedName(), types: [mdTypes()] });
     await writeHandle(handle, text);
     (window as any).__currentFileHandle = handle;
     setDocTitle(handle.name);

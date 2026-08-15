@@ -17,6 +17,7 @@ English | [中文](README_CN.md)
 - **Zoom**: editor font scaling (`⌘+` / `⌘-`, 50%–200%)
 - **Autosave**: drafts are debounced to localStorage every 500 ms and restored on launch
 - **Word count**: live word / character stats in the status bar
+- **UI languages**: statusbar switcher for English / 简体中文 / 日本語 — follows the OS language on first launch, persists your choice, welcome document included
 
 ## Tech Stack
 
