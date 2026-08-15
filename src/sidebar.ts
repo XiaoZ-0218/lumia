@@ -2,6 +2,7 @@
 import './sidebar.css';
 import { onUpdate, ready } from './editor';
 import { t, onLocaleChange } from './i18n';
+import { rememberFile, rememberFolder } from './session';
 import { isTauri, parentDir, pickDirectory, readDirShallow, readText } from './tauri-bridge';
 import type { TreeEntry as BridgeTreeEntry } from './tauri-bridge';
 
@@ -190,6 +191,8 @@ async function openFile(node: FileNode, li: HTMLElement): Promise<void> {
   const text = node.handle ? await (await node.handle.getFile()).text() : await readText(node.path);
   await window.__editor.setMarkdown(text);
   (window as any).__currentFileHandle = node.handle ?? node.path;
+  // Tauri tree nodes carry a real path — remember it for the next launch.
+  if (!node.handle) rememberFile(node.path);
   document.querySelectorAll('#file-tree li.active').forEach((el) => el.classList.remove('active'));
   li.classList.add('active');
 }
@@ -241,6 +244,7 @@ export async function openFolder(path: string): Promise<void> {
 
 async function loadRootTauri(path: string): Promise<void> {
   currentRoot = { kind: 'tauri', path };
+  rememberFolder(path);
   updateFilesHeader();
   const tree = document.getElementById('file-tree') as HTMLUListElement | null;
   if (!tree) return;

@@ -3,7 +3,8 @@
 import { onUpdate, ready } from './editor';
 import { openFolder, revealFile } from './sidebar';
 import { t } from './i18n';
-import { isTauri, openMarkdownFile, pickFileOrFolder, saveMarkdownFile, writeText } from './tauri-bridge';
+import { forgetFile, lastSession, rememberFile } from './session';
+import { isTauri, openMarkdownFile, pickFileOrFolder, readText, saveMarkdownFile, writeText } from './tauri-bridge';
 
 // lib.dom ships FileSystemFileHandle but not the picker methods — declare them.
 type FilePickerAcceptType = { description?: string; accept: Record<string, string[]> };
@@ -60,6 +61,10 @@ async function applyOpened(text: string, name: string, handle: FileSystemFileHan
   (window as any).__currentFileHandle = handle;
   fallbackName = handle ? null : name;
   setDocTitle(name);
+  // A string handle is a Tauri path — remember it for the next launch. Browser
+  // handles can't be re-opened without a permission prompt, so forget instead.
+  if (typeof handle === 'string') rememberFile(handle);
+  else forgetFile();
 }
 
 async function openFile(): Promise<void> {
@@ -141,6 +146,7 @@ async function saveFile(): Promise<void> {
     }
     (window as any).__currentFileHandle = path;
     setDocTitle(baseName(path));
+    rememberFile(path);
     return;
   }
   if (typeof window.showSaveFilePicker !== 'function') return download(text);
@@ -177,6 +183,33 @@ function scheduleDraftSave(md: string): void {
       /* quota / disabled storage — autosave is best-effort */
     }
   }, 500);
+}
+
+// ---- session restore (Tauri only): reopen the last folder and file ----
+async function restoreSession(): Promise<void> {
+  await ready;
+  const { folder, file } = lastSession();
+  if (file) {
+    try {
+      const text = await readText(file);
+      // The autosaved draft is newer than the disk file when edits were
+      // unsaved — keep the draft, just re-attach the path, title, and tree.
+      const draft = localStorage.getItem(DRAFT_KEY);
+      if (!draft || !draft.trim()) await window.__editor.setMarkdown(text);
+      (window as any).__currentFileHandle = file;
+      fallbackName = null;
+      setDocTitle(baseName(file));
+      await revealFile(dirName(file), baseName(file));
+      return;
+    } catch (err) {
+      console.error('failed to restore last file:', err);
+      forgetFile();
+    }
+  }
+  if (folder) {
+    // loadRootTauri already renders a "could not read" state on failure.
+    await openFolder(folder);
+  }
 }
 
 export function initFiles(): void {
@@ -246,4 +279,7 @@ export function initFiles(): void {
       /* no localStorage — skip restore */
     }
   });
+
+  // Queued after the draft restore above so the draft content wins on boot.
+  if (isTauri()) void restoreSession();
 }
