@@ -1,6 +1,7 @@
 // Export: standalone HTML download + print/PDF. Owns only this file (+ export.css).
 import './export.css';
 import { ready } from './editor';
+import { t, locale } from './i18n';
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -8,7 +9,7 @@ function esc(s: string): string {
 
 function sanitizeFilename(s: string): string {
   const clean = s.replace(/[\\/:*?"<>|]/g, '-').trim();
-  return clean || 'Untitled';
+  return clean || t('untitled');
 }
 
 function themeClass(): string {
@@ -41,7 +42,7 @@ function buildExportHtml(content: string, themeCss: string, bodyClass: string, t
     '}',
   ].join('\n');
   return `<!doctype html>
-<html lang="en">
+<html lang="${locale()}">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -71,7 +72,7 @@ async function exportHtml(): Promise<void> {
   const pm = document.querySelector<HTMLElement>('#editor .ProseMirror');
   const content = pm?.innerHTML ?? '';
   const [themeCss] = await Promise.all([getThemeCss(), ready]);
-  const title = (document.getElementById('doc-title')?.textContent ?? 'Untitled').trim() || 'Untitled';
+  const title = (document.getElementById('doc-title')?.textContent ?? t('untitled')).trim() || t('untitled');
   download(`${sanitizeFilename(title)}.html`, buildExportHtml(content, themeCss, themeClass(), title));
 }
 

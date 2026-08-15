@@ -12,6 +12,7 @@ import {
 } from '@milkdown/preset-commonmark';
 import { insertTableCommand, toggleStrikethroughCommand } from '@milkdown/preset-gfm';
 import { callCommand } from '@milkdown/utils';
+import { t } from './i18n';
 
 /** Run a Milkdown command by its key, with an optional payload. */
 function run(key: CmdKey<any>, payload?: any): void {
@@ -70,7 +71,7 @@ function toggleTaskList(): void {
 
 /** ⌘K: prompt for a URL and wrap the selection in a link. */
 function insertLink(): void {
-  const href = window.prompt('Link URL:', 'https://');
+  const href = window.prompt(t('linkUrlPrompt'), 'https://');
   if (href) run(toggleLinkCommand.key, { href });
 }
 

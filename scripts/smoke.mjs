@@ -516,6 +516,16 @@ assert($('#doc-title').textContent === '本地化检查', 'title still follows t
 await editor.setMarkdown('no heading here');
 await waitFor(() => $('#doc-title').textContent === '无标题', 'untitled fallback localizes');
 
+// Exported standalone HTML carries the active locale.
+const zhExportCount = downloads.length;
+$('#export-html').click();
+await waitFor(() => downloads.length === zhExportCount + 1, 'zh export download initiated');
+{
+  const blob = createdBlobs.get(downloads[downloads.length - 1].href);
+  const html = await blob.text();
+  assert(html.includes('<html lang="zh">'), 'exported HTML lang follows the locale');
+}
+
 langSelect.value = 'ja';
 langSelect.dispatchEvent(new Event('change', { bubbles: true }));
 assert($('#root-name').textContent === 'フォルダなし', 'static texts flip to Japanese');
