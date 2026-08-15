@@ -1,12 +1,13 @@
 # Lumia
 
-A WYSIWYG markdown editor that looks and feels like [Typora](https://typora.io/). Type markdown and watch it render as you go — no preview panel, no floating toolbar.
+A WYSIWYG markdown editor that looks and feels like [Typora](https://typora.io/). Type markdown and watch it render as you go — no preview panel to distract you.
 
 English | [中文](README_CN.md)
 
 ## Features
 
 - **WYSIWYG editing**: built on Milkdown / ProseMirror with CommonMark + GFM (tables, task lists, strikethrough)
+- **Selection toolbar**: selecting text pops up a small bubble menu with bold, italic, strikethrough, inline code, and link
 - **Source mode**: toggle between WYSIWYG and raw markdown (`⌘/`)
 - **Raw HTML rendering**: inline and block HTML in markdown renders in place in the WYSIWYG view (sanitized — scripts and event handlers are stripped); edit the original HTML in source mode (`⌘/`)
 - **File management**: open / save `.md` files (`⌘O` / `⌘S`) via the File System Access API or native Tauri dialogs, with automatic fallbacks (file input / download) elsewhere

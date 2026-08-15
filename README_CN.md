@@ -1,12 +1,13 @@
 # Lumia
 
-一个外观和手感都类似 [Typora](https://typora.io/) 的所见即所得（WYSIWYG）Markdown 编辑器。输入 Markdown 即时渲染 —— 没有预览面板，没有悬浮工具栏。
+一个外观和手感都类似 [Typora](https://typora.io/) 的所见即所得（WYSIWYG）Markdown 编辑器。输入 Markdown 即时渲染 —— 没有预览面板打扰你。
 
 [English](README.md) | 中文
 
 ## 功能特性
 
 - **所见即所得编辑**：基于 Milkdown / ProseMirror，支持 CommonMark 与 GFM（表格、任务列表、删除线）
+- **选中浮动工具栏**：选中文字后弹出气泡菜单，一键应用加粗、斜体、删除线、行内代码和链接
 - **源码模式**：一键在所见即所得与 Markdown 源码之间切换（`⌘/`）
 - **原始 HTML 渲染**：Markdown 中的行内 / 块级 HTML 在所见即所得视图中就地渲染（已做安全过滤：移除 script 与事件处理器）；可在源码模式（`⌘/`）中编辑原始 HTML
 - **文件管理**：打开 / 保存 `.md` 文件（`⌘O` / `⌘S`），支持浏览器 File System Access API 与 Tauri 原生文件对话框；不支持时自动降级为文件选择 / 下载
