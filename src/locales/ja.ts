@@ -44,10 +44,15 @@ export const ja: Dictionary = {
   source: 'ソース',
   sourceTitle: 'ソースモード切替 (⌘/)',
   linkUrlPrompt: 'リンク URL：',
+  bubbleBold: '太字：**テキスト** (⌘B)',
+  bubbleItalic: '斜体：*テキスト* (⌘I)',
+  bubbleStrike: '取り消し線：~~テキスト~~ (⌘⇧X)',
+  bubbleCode: 'インラインコード：`テキスト`',
+  bubbleLink: 'リンク：[テキスト](url) (⌘K)',
   markdownTypes: 'Markdown',
   welcome: `# Lumia へようこそ
 
-これは [Typora](https://typora.io/) のような見た目と操作感の **WYSIWYG** Markdown エディタです。Markdown を入力するとその場でレンダリングされます —— プレビューペインもフローティングツールバーもありません。
+これは [Typora](https://typora.io/) のような見た目と操作感の **WYSIWYG** Markdown エディタです。Markdown を入力するとその場でレンダリングされます —— プレビューペインはありません。
 
 ## インラインスタイル
 

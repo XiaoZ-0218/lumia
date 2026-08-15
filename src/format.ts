@@ -15,7 +15,7 @@ import { callCommand } from '@milkdown/utils';
 import { t } from './i18n';
 
 /** Run a Milkdown command by its key, with an optional payload. */
-function run(key: CmdKey<any>, payload?: any): void {
+export function runCommand(key: CmdKey<any>, payload?: any): void {
   window.__editor?.call(callCommand(key, payload));
 }
 
@@ -70,9 +70,9 @@ function toggleTaskList(): void {
 }
 
 /** ⌘K: prompt for a URL and wrap the selection in a link. */
-function insertLink(): void {
+export function insertLink(): void {
   const href = window.prompt(t('linkUrlPrompt'), 'https://');
-  if (href) run(toggleLinkCommand.key, { href });
+  if (href) runCommand(toggleLinkCommand.key, { href });
 }
 
 export function initFormat(): void {
@@ -87,12 +87,12 @@ export function initFormat(): void {
         e.preventDefault();
         const level = Number(digit[1]);
         if (level) toggleHeading(level);
-        else run(turnIntoTextCommand.key);
+        else runCommand(turnIntoTextCommand.key);
         return;
       }
       if (code === 'KeyT') {
         e.preventDefault();
-        run(insertTableCommand.key, { row: 3, col: 3 });
+        runCommand(insertTableCommand.key, { row: 3, col: 3 });
         return;
       }
       if (code === 'KeyK') {
@@ -104,13 +104,13 @@ export function initFormat(): void {
     if (altKey && !shiftKey) {
       if (code === 'KeyQ') {
         e.preventDefault();
-        run(wrapInBlockquoteCommand.key);
+        runCommand(wrapInBlockquoteCommand.key);
       } else if (code === 'KeyU') {
         e.preventDefault();
-        run(wrapInBulletListCommand.key);
+        runCommand(wrapInBulletListCommand.key);
       } else if (code === 'KeyO') {
         e.preventDefault();
-        run(wrapInOrderedListCommand.key);
+        runCommand(wrapInOrderedListCommand.key);
       } else if (code === 'KeyX') {
         e.preventDefault();
         toggleTaskList();
@@ -120,10 +120,10 @@ export function initFormat(): void {
     if (shiftKey && !altKey) {
       if (code === 'KeyX') {
         e.preventDefault();
-        run(toggleStrikethroughCommand.key);
+        runCommand(toggleStrikethroughCommand.key);
       } else if (code === 'KeyK') {
         e.preventDefault();
-        run(createCodeBlockCommand.key);
+        runCommand(createCodeBlockCommand.key);
       }
     }
   });

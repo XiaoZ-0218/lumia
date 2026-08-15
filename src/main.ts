@@ -5,6 +5,7 @@ import { initSidebar } from './sidebar';
 import { initExport } from './export';
 import { initFiles } from './files';
 import { initFormat } from './format';
+import { initBubble } from './bubble';
 import { initViewModes } from './viewmodes';
 import { initI18n } from './i18n';
 
@@ -126,4 +127,5 @@ initSidebar();
 initExport();
 initFiles();
 initFormat();
+initBubble();
 initViewModes();

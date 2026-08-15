@@ -476,6 +476,56 @@ const ev8 = dispatchKey(document, { key: '/', code: 'Slash', metaKey: true });
 await tick();
 assert(!document.body.classList.contains('source-mode'), '⌘/ toggles back');
 
+// ---- 9b. bubble menu (selection toolbar) -------------------------------------
+console.log('\n[9b] Bubble menu');
+await editor.setMarkdown('make this word bold please');
+await tick(30);
+const bubble = () => $('#bubble-menu');
+assert(bubble() !== null, '#bubble-menu exists');
+assert(bubble().hidden === true, 'bubble hidden without a selection');
+assert($$('#bubble-menu .bubble-btn').length === 5, 'bubble offers 5 actions');
+
+const view9b = editor.getView();
+// The bundle ships its own ProseMirror copy — grab TextSelection from the
+// live state instead of importing a second copy here.
+const TS = view9b.state.selection.constructor;
+let bFrom = -1;
+view9b.state.doc.descendants((node, pos) => {
+  if (bFrom === -1 && node.isText && node.text.includes('word')) {
+    bFrom = pos + node.text.indexOf('word');
+    return false;
+  }
+  return true;
+});
+assert(bFrom > -1, 'located the word "word" in the doc');
+view9b.dispatch(view9b.state.tr.setSelection(TS.create(view9b.state.doc, bFrom, bFrom + 4)));
+// The menu waits for the selection to settle (debounced) before popping in.
+await waitFor(() => bubble().hidden === false, 'bubble appears once the selection settles');
+assert(bubble().classList.contains('show'), 'bubble pops in with the show animation class');
+const boldBtn = () => $('#bubble-menu [data-mark="strong"]');
+assert(boldBtn() !== null, 'bold button present');
+assert(boldBtn().textContent === '**', 'bold button shows the markdown syntax (light learning)');
+assert(boldBtn().title === 'Bold: **text** (⌘B)', 'tooltip teaches name + syntax + shortcut');
+assert(boldBtn().classList.contains('active') === false, 'bold not active on plain text');
+boldBtn().dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+await tick(30);
+const boldMd = await editor.getMarkdown();
+assert(boldMd.includes('**word**'), `bold applied via bubble (${boldMd.trim()})`);
+assert(boldBtn().classList.contains('active') === true, 'bold button shows the active state');
+
+const strikeBtn = $('#bubble-menu [data-mark="strike_through"]');
+strikeBtn.dispatchEvent(new window.MouseEvent('mousedown', { bubbles: true, cancelable: true }));
+await tick(30);
+assert((await editor.getMarkdown()).includes('~~word~~'), 'strikethrough applied via bubble');
+
+// Collapse the selection -> the bubble hides again.
+view9b.dispatch(view9b.state.tr.setSelection(TS.near(view9b.state.doc.resolve(0))));
+await tick(30);
+assert(bubble().hidden === true, 'bubble hides when the selection collapses');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'welcome doc restored after bubble menu');
+
 // ---- editor still alive after all the poking --------------------------------
 const finalMd = await editor.getMarkdown();
 assert(finalMd.includes('# Welcome to Lumia'), 'editor healthy at end (getMarkdown works)');

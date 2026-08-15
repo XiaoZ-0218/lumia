@@ -42,10 +42,15 @@ export const en = {
   source: 'Source',
   sourceTitle: 'Toggle source mode (⌘/)',
   linkUrlPrompt: 'Link URL:',
+  bubbleBold: 'Bold: **text** (⌘B)',
+  bubbleItalic: 'Italic: *text* (⌘I)',
+  bubbleStrike: 'Strikethrough: ~~text~~ (⌘⇧X)',
+  bubbleCode: 'Inline code: `text`',
+  bubbleLink: 'Link: [text](url) (⌘K)',
   markdownTypes: 'Markdown',
   welcome: `# Welcome to Lumia
 
-This is a **WYSIWYG** markdown editor that looks and feels like [Typora](https://typora.io/). Type markdown and watch it render as you go — no preview panel, no floating toolbar.
+This is a **WYSIWYG** markdown editor that looks and feels like [Typora](https://typora.io/). Type markdown and watch it render as you go — no preview panel to distract you.
 
 ## Write inline styles
 

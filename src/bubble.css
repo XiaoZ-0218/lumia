@@ -1,0 +1,61 @@
+/* Bubble menu: floating toolbar over the current text selection. */
+
+#bubble-menu {
+  position: fixed;
+  /* Hidden pose: slightly lower and transparent; .show rises and fades in. */
+  transform: translate(-50%, calc(-100% - 2px));
+  opacity: 0;
+  transition:
+    opacity 160ms ease-out,
+    transform 160ms ease-out;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
+  z-index: 200;
+  user-select: none;
+}
+
+#bubble-menu.show {
+  transform: translate(-50%, calc(-100% - 10px));
+  opacity: 1;
+}
+
+#bubble-menu[hidden] {
+  display: none;
+}
+
+.bubble-btn {
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--fg);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1;
+  min-width: 28px;
+  padding: 5px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bubble-btn code {
+  font-family: inherit;
+  font-size: inherit;
+  background: none;
+  padding: 0;
+}
+
+.bubble-btn:hover {
+  background: var(--border);
+}
+
+.bubble-btn.active {
+  color: var(--accent);
+  background: var(--border);
+}

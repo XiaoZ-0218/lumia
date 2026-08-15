@@ -44,10 +44,15 @@ export const zh: Dictionary = {
   source: '源码',
   sourceTitle: '切换源码模式 (⌘/)',
   linkUrlPrompt: '链接地址：',
+  bubbleBold: '加粗：**文字** (⌘B)',
+  bubbleItalic: '斜体：*文字* (⌘I)',
+  bubbleStrike: '删除线：~~文字~~ (⌘⇧X)',
+  bubbleCode: '行内代码：`文字`',
+  bubbleLink: '链接：[文字](网址) (⌘K)',
   markdownTypes: 'Markdown',
   welcome: `# 欢迎使用 Lumia
 
-这是一款外观与手感都接近 [Typora](https://typora.io/) 的 **所见即所得** Markdown 编辑器。直接输入 Markdown，内容即时渲染 —— 没有预览面板，也没有浮动工具栏。
+这是一款外观与手感都接近 [Typora](https://typora.io/) 的 **所见即所得** Markdown 编辑器。直接输入 Markdown，内容即时渲染 —— 没有预览面板打扰你。
 
 ## 行内样式
 
