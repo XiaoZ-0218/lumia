@@ -29,6 +29,7 @@ Key features: Milkdown/ProseMirror editor (CommonMark + GFM), source-mode toggle
 │   │                   # call/getView); custom node views; HTML sanitizer; word count/title
 │   ├── sidebar.ts      # Files tree + Outline tabs
 │   ├── files.ts        # Open / save / draft autosave (FS Access API, Tauri, or fallbacks)
+│   ├── session.ts      # Last folder/file persistence for relaunch restore (Tauri only)
 │   ├── export.ts       # Standalone HTML export + print/PDF
 │   ├── format.ts       # Formatting keyboard shortcuts (⌘K, ⌘⇧K, ⌘0–6, tables, lists…)
 │   ├── viewmodes.ts    # Focus mode / typewriter mode, persisted in localStorage
