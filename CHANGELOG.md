@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **UI language switcher** (English / 简体中文 / 日本語) in the statusbar: first
+  launch follows the OS language, the manual choice persists in
+  `lumia:lang`, and the welcome document is localized. Switching never
+  touches the open document.
+
 ## [0.1.0] - 2026-08-10
 
 Initial release.
