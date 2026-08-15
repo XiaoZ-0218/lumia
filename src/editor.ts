@@ -9,7 +9,7 @@ import { Plugin, PluginKey } from '@milkdown/prose/state';
 import { Decoration, DecorationSet } from '@milkdown/prose/view';
 import type { EditorView, NodeView } from '@milkdown/prose/view';
 import { $prose } from '@milkdown/utils';
-import { t } from './i18n';
+import { t, welcomeDoc } from './i18n';
 
 // Marks the top-level block containing the caret with .focus-active, so focus
 // mode can dim everything else. A decoration (not manual DOM classes), because
@@ -31,51 +31,6 @@ const focusActivePlugin = $prose(
       },
     }),
 );
-
-const WELCOME = `# Welcome to Lumia
-
-This is a **WYSIWYG** markdown editor that looks and feels like [Typora](https://typora.io/). Type markdown and watch it render as you go — no preview panel, no floating toolbar.
-
-## Write inline styles
-
-**Bold**, *italic*, ~~strikethrough~~, \`inline code\`, and [links](https://typora.io/).
-
-## Lists
-
-- Unordered lists
-- Nested lists
-  1. Ordered sub-list
-  2. Second item
-
-## Task lists
-
-- [x] WYSIWYG editing
-- [x] Source mode toggle
-- [ ] Theme switcher
-
-## Blockquote
-
-> Markdown is not just for documentation — it's for thinking.
-
-## Code
-
-\`\`\`ts
-const greeting = "Hello, world!";
-console.log(greeting);
-\`\`\`
-
-## Table
-
-| Feature    | Status |
-| ---------- | ------ |
-| WYSIWYG    | ✅     |
-| Source     | ✅     |
-| Themes     | 🔜     |
-
----
-
-*Happy writing!*
-`;
 
 export interface EditorAPI {
   getMarkdown(): Promise<string>;
@@ -334,8 +289,9 @@ async function boot(): Promise<void> {
     getView: () => editor.action((ctx) => ctx.get(editorViewCtx)),
   };
 
-  await setMarkdown(WELCOME);
-  refreshStats(WELCOME);
+  const md = welcomeDoc();
+  await setMarkdown(md);
+  refreshStats(md);
 }
 
 export const ready = boot();

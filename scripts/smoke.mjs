@@ -538,6 +538,54 @@ await editor.setMarkdown(welcomeMd);
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'welcome doc restored after i18n section');
 
+// ---- 10b. second boot with a persisted zh locale ----------------------------
+console.log('\n[10b] Second boot (persisted zh)');
+const html2 = readFileSync(join(root, 'index.html'), 'utf8');
+const dom2 = new JSDOM(html2, {
+  url: 'http://localhost/',
+  pretendToBeVisual: true,
+  runScripts: 'outside-only',
+  virtualConsole: vc,
+});
+const w2 = dom2.window;
+w2.localStorage.setItem('lumia:lang', 'zh'); // saved choice wins over detection
+for (const key of globalsToCopy) {
+  Object.defineProperty(globalThis, key, {
+    value: w2[key],
+    configurable: true,
+    writable: true,
+  });
+}
+if (typeof w2.document.getSelection !== 'function') {
+  w2.document.getSelection = () => w2.getSelection();
+}
+w2.HTMLElement.prototype.scrollIntoView = function () {};
+for (const [proto, method] of [
+  [w2.Range.prototype, 'getBoundingClientRect'],
+  [w2.Range.prototype, 'getClientRects'],
+]) {
+  if (typeof proto[method] !== 'function') {
+    proto[method] =
+      method === 'getClientRects'
+        ? () => []
+        : () => ({ top: 0, left: 0, height: 0, width: 0, right: 0, bottom: 0, x: 0, y: 0 });
+  }
+}
+const downloads2 = [];
+w2.HTMLAnchorElement.prototype.click = function () {
+  downloads2.push({ href: this.href, download: this.download });
+};
+// The bundle is a single chunk: re-import with a cache-busting query so the
+// module graph re-executes against the fresh window.
+await import(pathToFileURL(chunkPath).href + '?boot-zh');
+await waitFor(
+  () => w2.document.querySelector('#editor .milkdown .ProseMirror')?.textContent.includes('欢迎使用 Lumia'),
+  'zh welcome doc boots on second run',
+);
+assert(w2.document.querySelector('#root-name').textContent === '无文件夹', 'zh chrome on second boot');
+assert(w2.document.querySelector('.sidebar-tab').textContent === '文件', 'zh Files tab on second boot');
+assert(w2.localStorage.getItem('lumia:lang') === 'zh', 'saved locale untouched by boot');
+
 // ---- summary ------------------------------------------------------------------
 console.log('\njsdom "not implemented" notices (expected):');
 for (const e of jsdomErrors) console.log('  -', e);
