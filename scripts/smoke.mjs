@@ -232,6 +232,26 @@ await editor.setMarkdown(welcomeMd);
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'outline restored after raw html tests');
 
+// ---- 1d. image rendering (node view + round-trip) ---------------------------
+console.log('\n[1d] Image rendering');
+await editor.setMarkdown('![pic alt](assets/v2/pic.jpg "a title")\n\n![remote](https://example.com/x.png)');
+await tick(50);
+// ProseMirror inserts <img class="ProseMirror-separator"> between inline
+// leaves for caret placement — exclude those from the count.
+const mdImgs = $$('#editor .milkdown .ProseMirror img:not(.ProseMirror-separator)');
+assert(mdImgs.length === 2, `markdown images render as real <img> elements (got ${mdImgs.length})`);
+// Outside Tauri the node view keeps the src verbatim; the desktop shell swaps
+// in a blob URL resolved against the open file's folder.
+assert(mdImgs[0].getAttribute('src') === 'assets/v2/pic.jpg', 'relative src kept verbatim in the browser build');
+assert(mdImgs[0].alt === 'pic alt', 'alt text preserved');
+assert(mdImgs[0].title === 'a title', 'title preserved');
+assert(mdImgs[1].getAttribute('src') === 'https://example.com/x.png', 'remote src untouched');
+const imgMd = await editor.getMarkdown();
+assert(imgMd.includes('![pic alt](assets/v2/pic.jpg'), 'image markdown round-trips through the node view');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'outline restored after image tests');
+
 // ---- 2. all feature modules init without throwing ---------------------------
 console.log('\n[2] Feature module init (sidebar / export / files / format / viewmodes)');
 assert($('.sidebar-tabs') !== null, 'sidebar tabs built');
