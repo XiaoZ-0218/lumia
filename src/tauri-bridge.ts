@@ -3,7 +3,7 @@
 
 import { invoke } from '@tauri-apps/api/core';
 import { open, save } from '@tauri-apps/plugin-dialog';
-import { readDir, readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
+import { readDir, readFile, readTextFile, stat, writeTextFile } from '@tauri-apps/plugin-fs';
 
 /** True when running inside the Tauri v2 shell (WKWebView injects this global). */
 export function isTauri(): boolean {
@@ -62,6 +62,11 @@ export async function pickFileOrFolder(): Promise<{ kind: 'file' | 'dir'; path: 
 /** Read a UTF-8 text file at an absolute path. */
 export function readText(path: string): Promise<string> {
   return readTextFile(path);
+}
+
+/** Read raw bytes at an absolute path (used to load images next to a markdown file). */
+export async function readBinary(path: string): Promise<Uint8Array> {
+  return readFile(path);
 }
 
 /** Write UTF-8 text to an absolute path (creates or overwrites). */
