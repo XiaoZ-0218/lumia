@@ -57,9 +57,11 @@ function currentName(): string | null {
 
 // ---- open ----
 async function applyOpened(text: string, name: string, handle: FileSystemFileHandle | string | null): Promise<void> {
-  await window.__editor.setMarkdown(text); // editor.ts renders the heading — re-set below
+  // The handle must be set before rendering: the image node view resolves
+  // relative srcs against the current file's directory at render time.
   (window as any).__currentFileHandle = handle;
   fallbackName = handle ? null : name;
+  await window.__editor.setMarkdown(text); // editor.ts renders the heading — re-set below
   setDocTitle(name);
   // A string handle is a Tauri path — remember it for the next launch. Browser
   // handles can't be re-opened without a permission prompt, so forget instead.
@@ -192,12 +194,14 @@ async function restoreSession(): Promise<void> {
   if (file) {
     try {
       const text = await readText(file);
+      // The path must be attached before rendering so relative image srcs
+      // resolve against the file's directory.
+      (window as any).__currentFileHandle = file;
+      fallbackName = null;
       // The autosaved draft is newer than the disk file when edits were
       // unsaved — keep the draft, just re-attach the path, title, and tree.
       const draft = localStorage.getItem(DRAFT_KEY);
       if (!draft || !draft.trim()) await window.__editor.setMarkdown(text);
-      (window as any).__currentFileHandle = file;
-      fallbackName = null;
       setDocTitle(baseName(file));
       await revealFile(dirName(file), baseName(file));
       return;

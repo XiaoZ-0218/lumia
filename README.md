@@ -10,6 +10,7 @@ English | [中文](README_CN.md)
 - **Selection toolbar**: selecting text pops up a small bubble menu with bold, italic, strikethrough, inline code, and link
 - **Source mode**: toggle between WYSIWYG and raw markdown (`⌘/`)
 - **Raw HTML rendering**: inline and block HTML in markdown renders in place in the WYSIWYG view (sanitized — scripts and event handlers are stripped); edit the original HTML in source mode (`⌘/`)
+- **Local images** (desktop): image paths relative to the markdown file render in place, Typora-style
 - **File management**: open / save `.md` files (`⌘O` / `⌘S`) via the File System Access API or native Tauri dialogs, with automatic fallbacks (file input / download) elsewhere
 - **Sidebar**: Files and Outline tabs — browse a folder's file tree, jump to headings from the outline
 - **Export**: standalone HTML download with the active theme embedded, or print / export PDF (`⌘P`)

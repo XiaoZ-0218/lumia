@@ -12,9 +12,10 @@
 // jsdom is intentionally not a package.json dependency — it is a dev-only test
 // tool, so `npm i --no-save jsdom` keeps package.json / package-lock.json clean.
 
-import { readFileSync, readdirSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { JSDOM, VirtualConsole } from 'jsdom';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -231,6 +232,26 @@ assert(rawRoundMd.includes('<img'), 'getMarkdown still contains raw <img> markup
 await editor.setMarkdown(welcomeMd);
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'outline restored after raw html tests');
+
+// ---- 1d. image rendering (node view + round-trip) ---------------------------
+console.log('\n[1d] Image rendering');
+await editor.setMarkdown('![pic alt](assets/v2/pic.jpg "a title")\n\n![remote](https://example.com/x.png)');
+await tick(50);
+// ProseMirror inserts <img class="ProseMirror-separator"> between inline
+// leaves for caret placement — exclude those from the count.
+const mdImgs = $$('#editor .milkdown .ProseMirror img:not(.ProseMirror-separator)');
+assert(mdImgs.length === 2, `markdown images render as real <img> elements (got ${mdImgs.length})`);
+// Outside Tauri the node view keeps the src verbatim; the desktop shell swaps
+// in a blob URL resolved against the open file's folder.
+assert(mdImgs[0].getAttribute('src') === 'assets/v2/pic.jpg', 'relative src kept verbatim in the browser build');
+assert(mdImgs[0].alt === 'pic alt', 'alt text preserved');
+assert(mdImgs[0].title === 'a title', 'title preserved');
+assert(mdImgs[1].getAttribute('src') === 'https://example.com/x.png', 'remote src untouched');
+const imgMd = await editor.getMarkdown();
+assert(imgMd.includes('![pic alt](assets/v2/pic.jpg'), 'image markdown round-trips through the node view');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'outline restored after image tests');
 
 // ---- 2. all feature modules init without throwing ---------------------------
 console.log('\n[2] Feature module init (sidebar / export / files / format / viewmodes)');
@@ -641,6 +662,83 @@ assert(w2.document.querySelector('.sidebar-tab').textContent === '文件', 'zh F
 assert(w2.localStorage.getItem('lumia:lang') === 'zh', 'saved locale untouched by boot');
 assert(w2.document.querySelector('#file-tree .tree-empty-action'), 'browser boot ignores stale session keys');
 assert(w2.localStorage.getItem('lumia:lastFolder') === '/nonexistent', 'stale session keys left untouched by browser boot');
+
+// ---- 10c. third boot with Tauri IPC mocked: relative image resolution -------
+console.log('\n[10c] Tauri relative image resolution');
+// Temp fixture: a doc referencing an image relative to its own folder, inside a
+// non-ASCII directory (the real-world case this feature was built for).
+const fixtureRoot = mkdtempSync(join(tmpdir(), 'lumia-图片-'));
+mkdirSync(join(fixtureRoot, 'assets'), { recursive: true });
+const pngBytes = Uint8Array.from([
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01, 0x08, 0x06, 0x00, 0x00, 0x00, 0x1f, 0x15, 0xc4,
+  0x89, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x44, 0x41, 0x54, 0x78, 0x9c, 0x62, 0x00, 0x01, 0x00, 0x00,
+  0x05, 0x00, 0x01, 0x0d, 0x0a, 0x2d, 0xb4, 0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae,
+  0x42, 0x60, 0x82,
+]);
+writeFileSync(join(fixtureRoot, 'assets', 'pic.jpg'), pngBytes);
+writeFileSync(join(fixtureRoot, 'doc.md'), '# Fixture\n\n![shot](assets/pic.jpg)\n');
+
+const dom3 = new JSDOM(html, {
+  url: 'http://localhost/',
+  pretendToBeVisual: true,
+  runScripts: 'outside-only',
+  virtualConsole: vc,
+});
+const w3 = dom3.window;
+// Stub the Tauri IPC bridge BEFORE the bundle boots: isTauri() keys off this
+// global, and readText/readBinary route through __TAURI_INTERNALS__.invoke.
+const ipcCalls = [];
+w3.__TAURI_INTERNALS__ = {
+  invoke: async (cmd, args) => {
+    ipcCalls.push(cmd);
+    if (cmd === 'plugin:fs|read_file') return Array.from(readFileSync(args.path));
+    if (cmd === 'plugin:fs|read_text_file') {
+      return Array.from(new TextEncoder().encode(readFileSync(args.path, 'utf8')));
+    }
+    return null;
+  },
+  transformCallback: () => 0,
+};
+for (const key of globalsToCopy) {
+  Object.defineProperty(globalThis, key, {
+    value: w3[key],
+    configurable: true,
+    writable: true,
+  });
+}
+if (typeof w3.document.getSelection !== 'function') {
+  w3.document.getSelection = () => w3.getSelection();
+}
+w3.HTMLElement.prototype.scrollIntoView = function () {};
+for (const [proto, method] of [
+  [w3.Range.prototype, 'getBoundingClientRect'],
+  [w3.Range.prototype, 'getClientRects'],
+]) {
+  if (typeof proto[method] !== 'function') {
+    proto[method] =
+      method === 'getClientRects'
+        ? () => []
+        : () => ({ top: 0, left: 0, height: 0, width: 0, right: 0, bottom: 0, x: 0, y: 0 });
+  }
+}
+await import(pathToFileURL(chunkPath).href + '?boot-tauri');
+await waitFor(() => typeof w3.__editor?.setMarkdown === 'function', 'tauri-mode boot');
+
+// A string handle marks the Tauri path; images must resolve relative to it.
+w3.__currentFileHandle = join(fixtureRoot, 'doc.md');
+await w3.__editor.setMarkdown('![shot](assets/pic.jpg)');
+const tauriImg = () => w3.document.querySelector('#editor .milkdown .ProseMirror img:not(.ProseMirror-separator)');
+await waitFor(() => tauriImg()?.src.startsWith('blob:mock-'), 'relative image swapped to a blob URL');
+const imgBlob = createdBlobs.get(tauriImg().src);
+assert(imgBlob !== undefined && imgBlob.size === pngBytes.length,
+  'blob URL holds the bytes of the image next to the doc');
+assert(ipcCalls.includes('plugin:fs|read_file'), 'image bytes read through the Tauri fs bridge');
+
+// Remote URLs must bypass the bridge entirely.
+await w3.__editor.setMarkdown('![r](https://example.com/r.png)');
+await tick(50);
+assert(tauriImg()?.getAttribute('src') === 'https://example.com/r.png', 'remote image untouched in Tauri mode');
 
 // ---- summary ------------------------------------------------------------------
 console.log('\njsdom "not implemented" notices (expected):');

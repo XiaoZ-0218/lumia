@@ -189,8 +189,10 @@ function renderTree(container: HTMLUListElement, nodes: TreeNode[]): void {
 async function openFile(node: FileNode, li: HTMLElement): Promise<void> {
   await ready;
   const text = node.handle ? await (await node.handle.getFile()).text() : await readText(node.path);
-  await window.__editor.setMarkdown(text);
+  // Set the handle before rendering so relative image srcs resolve against
+  // the file's directory.
   (window as any).__currentFileHandle = node.handle ?? node.path;
+  await window.__editor.setMarkdown(text);
   // Tauri tree nodes carry a real path — remember it for the next launch.
   if (!node.handle) rememberFile(node.path);
   document.querySelectorAll('#file-tree li.active').forEach((el) => el.classList.remove('active'));
