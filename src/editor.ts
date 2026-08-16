@@ -10,6 +10,7 @@ import { Decoration, DecorationSet } from '@milkdown/prose/view';
 import type { EditorView, NodeView } from '@milkdown/prose/view';
 import { $prose } from '@milkdown/utils';
 import { t, welcomeDoc } from './i18n';
+import { isTauri, parentDir, readBinary } from './tauri-bridge';
 
 // Marks the top-level block containing the caret with .focus-active, so focus
 // mode can dim everything else. A decoration (not manual DOM classes), because
@@ -241,6 +242,110 @@ function createHtmlNodeView(
   return new HtmlView(node);
 }
 
+// ---- local image resolution ----
+
+const IMAGE_MIME: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  gif: 'image/gif',
+  webp: 'image/webp',
+  svg: 'image/svg+xml',
+  avif: 'image/avif',
+  bmp: 'image/bmp',
+};
+
+/** Session-lifetime cache: absolute image path → blob URL. */
+const imageBlobCache = new Map<string, string>();
+
+/** Absolute URLs and web-absolute paths load as-is; anything else is file-relative. */
+function isFileRelativeSrc(src: string): boolean {
+  return src !== '' && !/^(https?:|data:|blob:|asset:|file:|\/)/i.test(src);
+}
+
+/** Directory of the currently open markdown file (Tauri string handle only). */
+function currentFileDir(): string | null {
+  const handle = (window as unknown as { __currentFileHandle?: unknown }).__currentFileHandle;
+  return typeof handle === 'string' ? parentDir(handle) : null;
+}
+
+/** Join dir + relative src and normalize `.`/`..` segments (keeping the leading slash). */
+function resolveRelativePath(dir: string, rel: string): string {
+  const parts = `${dir}/${rel}`.split('/');
+  const out: string[] = [];
+  for (const part of parts) {
+    if (part === '.' || (part === '' && out.length > 0)) continue;
+    if (part === '..' && out.length > 1) out.pop();
+    else out.push(part);
+  }
+  return out.join('/');
+}
+
+/**
+ * Node view for images. Milkdown's default renderer emits `<img src>` verbatim,
+ * so relative paths resolve against the app origin (tauri://localhost) instead
+ * of the markdown file's folder and every local image breaks. We resolve file-
+ * relative srcs against the open file's directory and load bytes through the
+ * Tauri fs bridge into a blob URL. Clipboard serialization uses the schema's
+ * toDOM (not node views), so copy/paste still round-trips the original src.
+ */
+class ImageView implements NodeView {
+  dom: HTMLImageElement;
+
+  constructor(node: Node) {
+    const img = document.createElement('img');
+    this.dom = img;
+    this.render(node);
+  }
+
+  private render(node: Node): void {
+    const src = String(node.attrs.src ?? '');
+    this.dom.dataset.originalSrc = src;
+    this.dom.alt = String(node.attrs.alt ?? '');
+    const title = String(node.attrs.title ?? '');
+    if (title) this.dom.title = title;
+    else this.dom.removeAttribute('title');
+    this.dom.src = src;
+    void this.resolveLocal(src);
+  }
+
+  private async resolveLocal(src: string): Promise<void> {
+    if (!isTauri() || !isFileRelativeSrc(src)) return;
+    const dir = currentFileDir();
+    if (!dir) return;
+    let abs = resolveRelativePath(dir, src);
+    try {
+      abs = decodeURIComponent(abs);
+    } catch {
+      /* malformed escape — try the raw path */
+    }
+    try {
+      let url = imageBlobCache.get(abs);
+      if (!url) {
+        const bytes = await readBinary(abs);
+        const ext = abs.split('.').pop()?.toLowerCase() ?? '';
+        const blob = new Blob([bytes as BlobPart], { type: IMAGE_MIME[ext] ?? 'application/octet-stream' });
+        url = URL.createObjectURL(blob);
+        imageBlobCache.set(abs, url);
+      }
+      // Guard against the node having been re-rendered while the read was in flight.
+      if (this.dom.dataset.originalSrc === src) this.dom.src = url;
+    } catch {
+      /* unreadable file keeps the raw src + alt text, like a broken web image */
+    }
+  }
+
+  update(node: Node): boolean {
+    if (node.type.name !== 'image') return false;
+    if (String(node.attrs.src ?? '') !== this.dom.dataset.originalSrc) this.render(node);
+    return true;
+  }
+}
+
+function createImageNodeView(node: Node): NodeView {
+  return new ImageView(node);
+}
+
 async function boot(): Promise<void> {
   const editor = await Editor.make()
     .config((ctx) => {
@@ -251,6 +356,7 @@ async function boot(): Promise<void> {
           ...options.nodeViews,
           list_item: createTaskItemNodeView,
           html: createHtmlNodeView,
+          image: createImageNodeView,
         },
       }));
       ctx.get(listenerCtx).updated((_ctx, doc) => {
