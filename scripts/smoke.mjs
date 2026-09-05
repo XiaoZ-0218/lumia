@@ -588,11 +588,14 @@ assert($$('.sidebar-tab')[1].textContent === '大纲', 'Outline tab label flips'
 assert($('#file-tree .tree-empty-action').textContent === '打开文件夹以浏览',
   'empty-tree call-to-action flips');
 assert($('#up-dir').title === '请先打开文件夹', 'up-dir tooltip flips via updateFilesHeader');
+// No edit needed: the stats line re-renders in the new locale on its own.
+assert(/^\d+ 词 · \d+ 字符$/.test($('#word-count').textContent),
+  `stats re-render on locale switch (got "${$('#word-count').textContent}")`);
 
 // Stats format and the untitled fallback follow the locale.
 await editor.setMarkdown('# 本地化检查\n\n你好世界');
-await waitFor(() => $('#word-count').textContent.includes('词'), 'stats render in Chinese format');
-assert($('#doc-title').textContent === '本地化检查', 'title still follows the doc');
+await waitFor(() => $('#doc-title').textContent === '本地化检查', 'title still follows the doc');
+assert($('#word-count').textContent.includes('词'), 'stats render in Chinese format');
 await editor.setMarkdown('no heading here');
 await waitFor(() => $('#doc-title').textContent === '无标题', 'untitled fallback localizes');
 
