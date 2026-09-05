@@ -5,6 +5,9 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
+    // Not in core:window:default — required for the custom titlebar's
+    // data-tauri-drag-region to actually start a window drag.
+    "core:window:allow-start-dragging",
     "dialog:allow-open",
     "dialog:allow-save",
     {

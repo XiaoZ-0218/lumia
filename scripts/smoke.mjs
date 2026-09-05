@@ -288,6 +288,11 @@ assert($$('#theme-select option').length === 4, 'theme select populated with 4 t
 assert(document.body.classList.contains('theme-github'), 'default theme applied');
 assert($('#theme-link') !== null, 'theme stylesheet link injected');
 assert($$('.statusbar-btn').length >= 5, 'statusbar controls present');
+// The desktop shell uses an overlay titlebar, so the custom HTML titlebar must
+// declare itself a drag region — "deep" lets the title strip drag while buttons
+// inside stay clickable (Tauri's drag script skips interactive elements).
+assert($('.titlebar')?.getAttribute('data-tauri-drag-region') === 'deep',
+  'titlebar declares a deep drag region for the desktop shell');
 assert(window.localStorage.length >= 0, 'localStorage available');
 
 // ---- 2b. merged Open menu dropdown wiring -----------------------------------
