@@ -158,6 +158,7 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const editor = window.__editor;
 const pm = () => document.querySelector('#editor .milkdown .ProseMirror');
+const bootStats = $('#word-count').textContent;
 
 // ---- 1. editor boots + getMarkdown round-trip -------------------------------
 console.log('\n[1] Editor boot & markdown round-trip');
@@ -174,6 +175,10 @@ assert(roundMd.includes('# Hello') && roundMd.includes('**smoke**'), 'setMarkdow
 await editor.setMarkdown(welcomeMd);
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'outline re-render after restore');
+// The listener re-rendered stats by now (same update cycle as the outline) —
+// the numbers must not drift from boot just because syntax chars stop counting.
+assert($('#word-count').textContent === bootStats,
+  `stats consistent between boot and first edit (boot "${bootStats}", now "${$('#word-count').textContent}")`);
 
 // ---- 1b. task list checkboxes (node view + toggle) ---------------------------
 console.log('\n[1b] Task list checkboxes');

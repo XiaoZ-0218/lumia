@@ -412,7 +412,14 @@ async function boot(): Promise<void> {
 
   const md = welcomeDoc();
   await setMarkdown(md);
-  refreshStats(md);
+  // Count from the parsed doc, not the raw markdown: markdown syntax (**, [ ],
+  // link URLs) inflates the numbers, so boot stats used to disagree with what
+  // the listener reports after the first edit.
+  editor.action((ctx) => {
+    const doc = ctx.get(editorViewCtx).state.doc;
+    renderStats(doc.textBetween(0, doc.content.size, '\n'));
+    renderTitle(titleFromDoc(doc));
+  });
 }
 
 export const ready = boot();
