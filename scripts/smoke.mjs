@@ -415,6 +415,12 @@ assert(exportHtml.includes('<main id="editor"><div class="ProseMirror">'),
 assert(exportHtml.includes('body.theme-github'), 'theme CSS embedded');
 assert(exportHtml.includes('<title>Welcome to Lumia</title>'), 'export title set');
 
+// Checkbox state is a DOM property, not an attribute — the export must bake it in.
+const exportedBoxes = [...exportHtml.matchAll(/<input[^>]*>/g)].map((m) => m[0]);
+assert(exportedBoxes.length === 3, `export contains the 3 task checkboxes (got ${exportedBoxes.length})`);
+assert(exportedBoxes.filter((tag) => tag.includes('checked')).length === 2,
+  'checked tasks keep their checked attribute in the export');
+
 // ---- 7. files fallback save (no FS Access API → download) --------------------
 console.log('\n[7] Files fallback save');
 const dlCount = downloads.length;
