@@ -5,6 +5,7 @@ import { t, onLocaleChange } from './i18n';
 import { rememberFile, rememberFolder } from './session';
 import { isTauri, parentDir, pickDirectory, readDirShallow, readText } from './tauri-bridge';
 import type { TreeEntry as BridgeTreeEntry } from './tauri-bridge';
+import { TextSelection } from '@milkdown/prose/state';
 
 // ---- minimal File System Access API types (missing from older DOM libs) ----
 interface FSAFileHandle {
@@ -384,7 +385,18 @@ function scrollToHeading(index: number): void {
   const pm = document.querySelector('#editor .ProseMirror');
   if (!pm) return;
   const h = pm.querySelectorAll('h1, h2, h3, h4, h5, h6')[index];
-  if (h) h.scrollIntoView({ block: 'start' });
+  if (!h) return;
+  // Move the caret into the heading too: with typewriter mode on, the view
+  // re-centers on the caret — a scroll-only jump would bounce right back.
+  try {
+    const view = window.__editor.getView();
+    const pos = view.posAtDOM(h, 1);
+    const $pos = view.state.doc.resolve(Math.min(pos, view.state.doc.content.size));
+    view.dispatch(view.state.tr.setSelection(TextSelection.near($pos)));
+  } catch {
+    /* posAtDOM can fail without layout (jsdom) — scrolling still happens */
+  }
+  h.scrollIntoView({ block: 'start' });
 }
 
 function updateActiveOutline(): void {

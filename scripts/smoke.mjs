@@ -358,6 +358,13 @@ await editor.setMarkdown(welcomeMd);
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'outline restored after code-fence test');
 
+// Clicking an outline item moves the caret into that heading — with typewriter
+// mode the view re-centers on the caret, so a scroll-only jump would bounce back.
+$$('#outline .outline-item')[1].click();
+await tick(30);
+assert(window.__editor.getView().state.selection.$from.parent.textContent === 'Write inline styles',
+  'outline click moves the caret into the heading');
+
 // ---- 4. sidebar tabs switch --------------------------------------------------
 console.log('\n[4] Sidebar tabs');
 const sections = $$('.sidebar .sidebar-panel');
