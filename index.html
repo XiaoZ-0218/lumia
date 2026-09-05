@@ -6,7 +6,11 @@
     <title>Lumia</title>
   </head>
   <body class="theme-github">
-    <header class="titlebar">
+    <!-- data-tauri-drag-region="deep": the desktop shell uses an overlay
+         titlebar, so this custom bar is the only draggable area. "deep" lets
+         clicks on the title strip drag the window; Tauri's drag script skips
+         buttons/selects inside, so they stay clickable. Inert in browsers. -->
+    <header class="titlebar" data-tauri-drag-region="deep">
       <div class="traffic-lights" aria-hidden="true">
         <span class="dot red"></span>
         <span class="dot yellow"></span>

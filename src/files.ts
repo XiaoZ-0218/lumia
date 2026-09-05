@@ -2,7 +2,7 @@
 
 import { onUpdate, ready } from './editor';
 import { openFolder, revealFile } from './sidebar';
-import { t } from './i18n';
+import { t, onLocaleChange } from './i18n';
 import { forgetFile, lastSession, rememberFile } from './session';
 import { isTauri, openMarkdownFile, pickFileOrFolder, readText, saveMarkdownFile, writeText } from './tauri-bridge';
 
@@ -267,6 +267,13 @@ export function initFiles(): void {
   onUpdate((md) => {
     scheduleDraftSave(md);
     const name = currentName(); // editor.ts renders the heading — re-assert the file name
+    if (name) setDocTitle(name);
+  });
+
+  // editor.ts's locale handler may restore the "Untitled" fallback — a real
+  // file name (registered later, so it runs after) wins the titlebar back.
+  onLocaleChange(() => {
+    const name = currentName();
     if (name) setDocTitle(name);
   });
 

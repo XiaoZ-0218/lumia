@@ -158,6 +158,7 @@ const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const editor = window.__editor;
 const pm = () => document.querySelector('#editor .milkdown .ProseMirror');
+const bootStats = $('#word-count').textContent;
 
 // ---- 1. editor boots + getMarkdown round-trip -------------------------------
 console.log('\n[1] Editor boot & markdown round-trip');
@@ -174,6 +175,10 @@ assert(roundMd.includes('# Hello') && roundMd.includes('**smoke**'), 'setMarkdow
 await editor.setMarkdown(welcomeMd);
 await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
   'outline re-render after restore');
+// The listener re-rendered stats by now (same update cycle as the outline) —
+// the numbers must not drift from boot just because syntax chars stop counting.
+assert($('#word-count').textContent === bootStats,
+  `stats consistent between boot and first edit (boot "${bootStats}", now "${$('#word-count').textContent}")`);
 
 // ---- 1b. task list checkboxes (node view + toggle) ---------------------------
 console.log('\n[1b] Task list checkboxes');
@@ -283,6 +288,11 @@ assert($$('#theme-select option').length === 4, 'theme select populated with 4 t
 assert(document.body.classList.contains('theme-github'), 'default theme applied');
 assert($('#theme-link') !== null, 'theme stylesheet link injected');
 assert($$('.statusbar-btn').length >= 5, 'statusbar controls present');
+// The desktop shell uses an overlay titlebar, so the custom HTML titlebar must
+// declare itself a drag region — "deep" lets the title strip drag while buttons
+// inside stay clickable (Tauri's drag script skips interactive elements).
+assert($('.titlebar')?.getAttribute('data-tauri-drag-region') === 'deep',
+  'titlebar declares a deep drag region for the desktop shell');
 assert(window.localStorage.length >= 0, 'localStorage available');
 
 // ---- 2b. merged Open menu dropdown wiring -----------------------------------
@@ -344,6 +354,22 @@ assert(items[0].className.includes('lvl-1') && items[1].className.includes('lvl-
   'heading levels reflected in classes');
 assert($$('#outline .outline-item.active').length === 1, 'one outline item is active');
 
+// A `# line` inside a fenced code block is code, not a heading.
+await editor.setMarkdown('# Real Heading\n\n```\n# not a heading (code fence)\n```\n\ntext');
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 1
+  && $('#outline .outline-item').textContent === 'Real Heading',
+  'code-fence # lines stay out of the outline');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'outline restored after code-fence test');
+
+// Clicking an outline item moves the caret into that heading — with typewriter
+// mode the view re-centers on the caret, so a scroll-only jump would bounce back.
+$$('#outline .outline-item')[1].click();
+await tick(30);
+assert(window.__editor.getView().state.selection.$from.parent.textContent === 'Write inline styles',
+  'outline click moves the caret into the heading');
+
 // ---- 4. sidebar tabs switch --------------------------------------------------
 console.log('\n[4] Sidebar tabs');
 const sections = $$('.sidebar .sidebar-panel');
@@ -400,6 +426,12 @@ assert(exportHtml.includes('<main id="editor"><div class="ProseMirror">'),
   'editor structure reproduced for theme CSS');
 assert(exportHtml.includes('body.theme-github'), 'theme CSS embedded');
 assert(exportHtml.includes('<title>Welcome to Lumia</title>'), 'export title set');
+
+// Checkbox state is a DOM property, not an attribute — the export must bake it in.
+const exportedBoxes = [...exportHtml.matchAll(/<input[^>]*>/g)].map((m) => m[0]);
+assert(exportedBoxes.length === 3, `export contains the 3 task checkboxes (got ${exportedBoxes.length})`);
+assert(exportedBoxes.filter((tag) => tag.includes('checked')).length === 2,
+  'checked tasks keep their checked attribute in the export');
 
 // ---- 7. files fallback save (no FS Access API → download) --------------------
 console.log('\n[7] Files fallback save');
@@ -555,8 +587,13 @@ assert(finalMd.includes('# Welcome to Lumia'), 'editor healthy at end (getMarkdo
 const z0 = pm().style.zoom;
 $('#zoom-in').click();
 assert(pm().style.zoom === '1.1', `zoom applied (${z0} → ${pm().style.zoom})`);
+// Zoom reflows via CSS `zoom`, which fires neither resize nor scroll — the app
+// nudges a resize event so caret-anchored UI (bubble menu) re-positions.
+let resizeNudges = 0;
+window.addEventListener('resize', () => resizeNudges++);
 $('#zoom-out').click();
 assert(pm().style.zoom === '1', `zoom back to 100% (${pm().style.zoom})`);
+assert(resizeNudges > 0, 'zoom dispatches a resize nudge for caret-anchored UI');
 
 // ---- 10. language switcher (i18n) ------------------------------------------
 console.log('\n[10] Language switcher');
@@ -579,11 +616,14 @@ assert($$('.sidebar-tab')[1].textContent === '大纲', 'Outline tab label flips'
 assert($('#file-tree .tree-empty-action').textContent === '打开文件夹以浏览',
   'empty-tree call-to-action flips');
 assert($('#up-dir').title === '请先打开文件夹', 'up-dir tooltip flips via updateFilesHeader');
+// No edit needed: the stats line re-renders in the new locale on its own.
+assert(/^\d+ 词 · \d+ 字符$/.test($('#word-count').textContent),
+  `stats re-render on locale switch (got "${$('#word-count').textContent}")`);
 
 // Stats format and the untitled fallback follow the locale.
 await editor.setMarkdown('# 本地化检查\n\n你好世界');
-await waitFor(() => $('#word-count').textContent.includes('词'), 'stats render in Chinese format');
-assert($('#doc-title').textContent === '本地化检查', 'title still follows the doc');
+await waitFor(() => $('#doc-title').textContent === '本地化检查', 'title still follows the doc');
+assert($('#word-count').textContent.includes('词'), 'stats render in Chinese format');
 await editor.setMarkdown('no heading here');
 await waitFor(() => $('#doc-title').textContent === '无标题', 'untitled fallback localizes');
 

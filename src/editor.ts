@@ -9,7 +9,7 @@ import { Plugin, PluginKey } from '@milkdown/prose/state';
 import { Decoration, DecorationSet } from '@milkdown/prose/view';
 import type { EditorView, NodeView } from '@milkdown/prose/view';
 import { $prose } from '@milkdown/utils';
-import { t, welcomeDoc } from './i18n';
+import { t, welcomeDoc, onLocaleChange } from './i18n';
 import { isTauri, parentDir, readBinary } from './tauri-bridge';
 
 // Marks the top-level block containing the caret with .focus-active, so focus
@@ -72,17 +72,32 @@ function countWords(text: string): number {
   return latin + cjk;
 }
 
+// Last rendered values, cached so a locale switch can re-render the localized
+// format ("N words" / "Untitled") without waiting for the next document edit.
+let lastStatsText = '';
+let lastTitle = '';
+
 function renderStats(text: string) {
+  lastStatsText = text;
   const el = document.getElementById('word-count');
   if (el) el.textContent = t('stats', { words: countWords(text), chars: text.length });
 }
 
 function renderTitle(title: string) {
+  lastTitle = title;
   const el = document.getElementById('doc-title');
   const shown = title || t('untitled');
   if (el) el.textContent = shown;
   document.title = shown;
 }
+
+onLocaleChange(() => {
+  renderStats(lastStatsText);
+  // A heading-derived title is locale-independent; only the "Untitled"
+  // fallback needs re-rendering. If a file name owns the titlebar, files.ts
+  // re-asserts it in its own (later-registered) locale handler.
+  if (!lastTitle) renderTitle('');
+});
 
 function titleFromDoc(doc: NodeLike): string {
   let title = '';
@@ -397,7 +412,14 @@ async function boot(): Promise<void> {
 
   const md = welcomeDoc();
   await setMarkdown(md);
-  refreshStats(md);
+  // Count from the parsed doc, not the raw markdown: markdown syntax (**, [ ],
+  // link URLs) inflates the numbers, so boot stats used to disagree with what
+  // the listener reports after the first edit.
+  editor.action((ctx) => {
+    const doc = ctx.get(editorViewCtx).state.doc;
+    renderStats(doc.textBetween(0, doc.content.size, '\n'));
+    renderTitle(titleFromDoc(doc));
+  });
 }
 
 export const ready = boot();

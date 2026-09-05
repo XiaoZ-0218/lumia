@@ -70,7 +70,39 @@ function download(filename: string, html: string): void {
 
 async function exportHtml(): Promise<void> {
   const pm = document.querySelector<HTMLElement>('#editor .ProseMirror');
-  const content = pm?.innerHTML ?? '';
+  // Serialize a clone so view-only state can be baked into attributes without
+  // touching the live document.
+  const clone = pm ? (pm.cloneNode(true) as HTMLElement) : null;
+  if (pm && clone) {
+    // A checkbox's state is a DOM property, not an attribute — innerHTML would
+    // export every task as unchecked.
+    const liveBoxes = pm.querySelectorAll('input[type="checkbox"]');
+    clone.querySelectorAll('input[type="checkbox"]').forEach((box, i) => {
+      if ((liveBoxes[i] as HTMLInputElement | undefined)?.checked) {
+        box.setAttribute('checked', '');
+      }
+    });
+    // blob: URLs die with the app session — inline local images as data URLs.
+    for (const img of Array.from(clone.querySelectorAll('img'))) {
+      const src = img.getAttribute('src') ?? '';
+      if (!src.startsWith('blob:')) continue;
+      try {
+        const blob = await (await fetch(src)).blob();
+        img.setAttribute(
+          'src',
+          await new Promise<string>((resolve, reject) => {
+            const fr = new FileReader();
+            fr.onload = () => resolve(fr.result as string);
+            fr.onerror = () => reject(fr.error);
+            fr.readAsDataURL(blob);
+          }),
+        );
+      } catch {
+        /* keep the blob URL if inlining fails */
+      }
+    }
+  }
+  const content = clone?.innerHTML ?? '';
   const [themeCss] = await Promise.all([getThemeCss(), ready]);
   const title = (document.getElementById('doc-title')?.textContent ?? t('untitled')).trim() || t('untitled');
   download(`${sanitizeFilename(title)}.html`, buildExportHtml(content, themeCss, themeClass(), title));

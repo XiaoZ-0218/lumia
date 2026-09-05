@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **Window dragging** (desktop): the window can be dragged by its titlebar again — the custom bar now declares a Tauri drag region and the shell grants the start-dragging permission (double-click on the bar also zooms the window, macOS-style)
+- **Outline** no longer lists `# lines` inside fenced code blocks as headings, and clicking an outline entry now moves the caret into that heading (typewriter mode no longer yanks the view back)
+- **Word count** re-renders immediately when the UI language changes, and the boot numbers now match post-edit numbers (rendered text is counted, not markdown syntax)
+- **Bubble menu** re-anchors to the selection after zooming instead of floating at the old position
+- **HTML export** keeps task-list checked states and inlines local images as data URLs, so the exported file is self-contained
+
 ## [0.2.1] - 2026-08-16
 
 ### Added
