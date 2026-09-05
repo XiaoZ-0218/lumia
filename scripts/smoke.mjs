@@ -564,8 +564,13 @@ assert(finalMd.includes('# Welcome to Lumia'), 'editor healthy at end (getMarkdo
 const z0 = pm().style.zoom;
 $('#zoom-in').click();
 assert(pm().style.zoom === '1.1', `zoom applied (${z0} → ${pm().style.zoom})`);
+// Zoom reflows via CSS `zoom`, which fires neither resize nor scroll — the app
+// nudges a resize event so caret-anchored UI (bubble menu) re-positions.
+let resizeNudges = 0;
+window.addEventListener('resize', () => resizeNudges++);
 $('#zoom-out').click();
 assert(pm().style.zoom === '1', `zoom back to 100% (${pm().style.zoom})`);
+assert(resizeNudges > 0, 'zoom dispatches a resize nudge for caret-anchored UI');
 
 // ---- 10. language switcher (i18n) ------------------------------------------
 console.log('\n[10] Language switcher');

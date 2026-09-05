@@ -90,6 +90,9 @@ let zoom = 100;
 function applyZoom() {
   const pm = document.querySelector<HTMLElement>('#editor .ProseMirror');
   if (pm) pm.style.setProperty('zoom', String(zoom / 100));
+  // CSS zoom reflows the doc without firing resize/scroll, so anything anchored
+  // to caret coordinates (the bubble menu) would stay at the old pixel spot.
+  window.dispatchEvent(new Event('resize'));
 }
 document.getElementById('zoom-in')?.addEventListener('click', () => {
   zoom = Math.min(200, zoom + 10);
