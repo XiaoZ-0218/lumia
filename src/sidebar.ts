@@ -352,12 +352,18 @@ export async function revealFile(dirPath: string, fileName: string): Promise<voi
 // ---- outline ----
 type Heading = { level: number; text: string };
 
-function parseHeadings(md: string): Heading[] {
+// Headings come from the ProseMirror doc, not a line regex over the markdown —
+// a regex would also pick up `# lines` inside fenced code blocks.
+function readHeadings(): Heading[] {
   const heads: Heading[] = [];
-  for (const line of md.split('\n')) {
-    const m = line.match(/^(#{1,6})\s+(.*)$/);
-    if (m) heads.push({ level: m[1].length, text: m[2].trim() });
-  }
+  const view = window.__editor.getView();
+  view.state.doc.descendants((node) => {
+    if (node.type.name === 'heading') {
+      heads.push({ level: node.attrs.level as number, text: node.textContent });
+      return false;
+    }
+    return true;
+  });
   return heads;
 }
 
@@ -434,12 +440,11 @@ export function initSidebar(): void {
 
   void (async () => {
     await ready;
-    onUpdate((md) => {
-      renderOutline(parseHeadings(md));
+    onUpdate(() => {
+      renderOutline(readHeadings());
       updateActiveOutline();
     });
-    const md = await window.__editor.getMarkdown();
-    renderOutline(parseHeadings(md));
+    renderOutline(readHeadings());
     document.getElementById('editor')?.addEventListener('scroll', updateActiveOutline, { passive: true });
     updateActiveOutline();
   })();

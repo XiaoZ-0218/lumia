@@ -344,6 +344,15 @@ assert(items[0].className.includes('lvl-1') && items[1].className.includes('lvl-
   'heading levels reflected in classes');
 assert($$('#outline .outline-item.active').length === 1, 'one outline item is active');
 
+// A `# line` inside a fenced code block is code, not a heading.
+await editor.setMarkdown('# Real Heading\n\n```\n# not a heading (code fence)\n```\n\ntext');
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 1
+  && $('#outline .outline-item').textContent === 'Real Heading',
+  'code-fence # lines stay out of the outline');
+await editor.setMarkdown(welcomeMd);
+await waitFor(() => document.querySelectorAll('#outline .outline-item').length === 7,
+  'outline restored after code-fence test');
+
 // ---- 4. sidebar tabs switch --------------------------------------------------
 console.log('\n[4] Sidebar tabs');
 const sections = $$('.sidebar .sidebar-panel');
